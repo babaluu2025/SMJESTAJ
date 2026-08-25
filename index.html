@@ -28,7 +28,7 @@
         .login-btn { background: #667eea; color: white; border: none; padding: 12px 30px; border-radius: 5px; font-size: 16px; cursor: pointer; width: 100%; }
 
         header { background: white; padding: 15px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .header-content { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .header-content { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
         .btn { padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; margin: 1px; color: white; font-weight: bold; white-space: nowrap; }
         .btn-success { background: #28a745; }
         .btn-info { background: #17a2b8; }
@@ -41,10 +41,9 @@
         .matrix-table .objekat-naziv { text-align: left; font-weight: bold; font-size: 14px; background: #e3e3e3; }
         .matrix-table .soba-naziv { text-align: left; font-size: 13px; padding-left: 20px; }
         .matrix-table .mesec-header { font-weight: bold; font-size: 12px; }
-        .celija { cursor: pointer; min-width: 30px; height: 24px; font-size: 11px; }
+        .celija { cursor: pointer; min-width: 40px; height: 28px; font-size: 11px; font-weight: bold; }
         .zelena { background: #c8f7c5; }
         .crvena { background: #ffcccc; }
-        .siva { background: #f5f5f5; }
 
         .sync-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
         .sync-online { background: #28a745; }
@@ -56,9 +55,8 @@
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .search-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px; font-size: 16px; }
 
-        .badge { padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; }
-        .badge-placeno { background: #d4edda; color: #155724; }
-        .badge-nije { background: #f8d7da; color: #721c24; }
+        .radnik-row { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; }
+        .radnik-row span { font-size: 16px; cursor: pointer; flex: 1; }
 
         @media print {
             @page { size: A4 landscape; margin: 6mm; }
@@ -123,14 +121,35 @@
     </div>
 </div>
 
-<!-- MODAL ZA PLAĆANJE/CENU -->
-<div id="payModal" class="modal">
+<!-- MODAL ZA SOBU (radnici + plaćanje) -->
+<div id="sobaModal" class="modal">
     <div class="modal-content">
-        <div class="modal-header"><h3>💰 Plaćanje</h3><button onclick="closeModal('payModal')" style="font-size:24px;background:none;border:none;">&times;</button></div>
-        <p id="payInfo" style="margin-bottom:15px;font-size:15px;"></p>
-        <label style="font-weight:bold;">Iznos uplate (€):</label>
-        <input type="number" id="payIznos" class="search-input" placeholder="npr. 150" min="0" step="any">
-        <button onclick="confirmPay()" class="btn btn-success" style="width:100%;padding:12px;">✅ Potvrdi</button>
+        <div class="modal-header">
+            <h3 id="sobaModalTitle"></h3>
+            <button onclick="closeModal('sobaModal')" style="font-size:24px;background:none;border:none;">&times;</button>
+        </div>
+        
+        <!-- RADNICI -->
+        <div style="margin-bottom:15px;">
+            <label style="font-weight:bold;font-size:15px;">👤 Radnici u sobi:</label>
+            <div id="radniciList" style="margin-top:10px;"></div>
+            <button onclick="dodajRadnika()" class="btn btn-info" style="width:100%;margin-top:10px;">+ Dodaj radnika</button>
+        </div>
+        
+        <hr style="margin:15px 0;">
+        
+        <!-- PLAĆANJE -->
+        <div>
+            <label style="font-weight:bold;font-size:15px;">💰 Plaćanje za: <span id="payMonthLabel"></span></label>
+            <div style="margin-top:10px;">
+                <label>Iznos uplate (€):</label>
+                <input type="number" id="payIznos" class="search-input" placeholder="npr. 150" min="0" step="any">
+            </div>
+            <div style="display:flex;gap:5px;margin-top:10px;">
+                <button onclick="confirmPay()" class="btn btn-success" style="flex:1;">✅ Označi plaćeno</button>
+                <button onclick="obrisiPlacanje()" class="btn btn-danger" style="flex:1;">❌ Obriši plaćanje</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -156,7 +175,7 @@ let supabaseClient = null;
 try { supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) {}
 
 let data = { jedinice: [] };
-let selectedCell = null; // { jedinicaIdx, sobaIdx, mesec }
+let selectedCell = null; // { ji, si, mesec }
 
 function updateSyncStatus(online) {
     const dot = document.getElementById('syncDot');
@@ -202,17 +221,18 @@ document.getElementById('logoutBtn').onclick = () => {
 function renderMatrix() {
     const c = document.getElementById('matrixContainer');
     let html = '<table class="matrix-table"><thead><tr><th style="min-width:150px;">OBJEKAT / SOBA</th>';
-    for (let m = 1; m <= 12; m++) { html += `<th class="mesec-header">${getMesecIme(m).substring(0,3)}</th>`; }
+    for (let m = 1; m <= 12; m++) { html += `<th class="mesec-header">${getMesecIme(m)}</th>`; }
     html += '</tr></thead><tbody>';
 
     data.jedinice.forEach((jedinica, ji) => {
-        html += `<tr><td class="objekat-naziv" colspan="13">🏢 ${jedinica.ime}</td></tr>`;
+        html += `<tr><td class="objekat-naziv" colspan="13" style="text-align:left;background:#e3e3e3;">🏢 ${jedinica.ime}</td></tr>`;
         jedinica.sobe.forEach((soba, si) => {
-            html += `<tr><td class="soba-naziv">🚪 ${soba.ime}</td>`;
+            html += `<tr><td class="soba-naziv" style="text-align:left;">🚪 ${soba.ime} (${soba.radnici ? soba.radnici.length : 0}👤)</td>`;
             for (let m = 1; m <= 12; m++) {
                 const placeno = soba.placenoMesec === m && soba.placenoGodina === new Date().getFullYear();
                 const klasa = placeno ? 'zelena' : 'crvena';
-                html += `<td class="celija ${klasa}" onclick="openPay(${ji},${si},${m})" title="${getMesecIme(m)} ${new Date().getFullYear()}">${placeno ? '✅' : ''}</td>`;
+                const iznos = (soba.cenaMesec && soba.cenaMesec[m]) ? `<br><small>${soba.cenaMesec[m]}€</small>` : '';
+                html += `<td class="celija ${klasa}" onclick="openSobaModal(${ji},${si},${m})">${placeno ? '✅' + iznos : ''}</td>`;
             }
             html += '</tr>';
         });
@@ -222,16 +242,71 @@ function renderMatrix() {
     c.innerHTML = html;
 }
 
-// ==================== PLAĆANJE ====================
-function openPay(ji, si, mesec) {
+// ==================== SOBA MODAL ====================
+function openSobaModal(ji, si, mesec) {
     selectedCell = { ji, si, mesec };
     const jedinica = data.jedinice[ji];
     const soba = jedinica.sobe[si];
-    document.getElementById('payInfo').textContent = `${jedinica.ime} - Soba ${soba.ime} - ${getMesecIme(mesec)}`;
-    document.getElementById('payIznos').value = soba.cenaMesec && soba.cenaMesec[mesec] ? soba.cenaMesec[mesec] : '';
-    showModal('payModal');
+    
+    document.getElementById('sobaModalTitle').textContent = `🚪 ${jedinica.ime} - Soba ${soba.ime}`;
+    document.getElementById('payMonthLabel').textContent = `${getMesecIme(mesec)} ${new Date().getFullYear()}`;
+    document.getElementById('payIznos').value = (soba.cenaMesec && soba.cenaMesec[mesec]) ? soba.cenaMesec[mesec] : '';
+    
+    renderRadnici();
+    showModal('sobaModal');
 }
 
+function renderRadnici() {
+    const { ji, si } = selectedCell;
+    const soba = data.jedinice[ji].sobe[si];
+    if (!soba.radnici) soba.radnici = [];
+    
+    const c = document.getElementById('radniciList');
+    if (soba.radnici.length === 0) {
+        c.innerHTML = '<p style="color:#999;">Nema radnika u sobi.</p>';
+    } else {
+        c.innerHTML = soba.radnici.map((radnik, ri) => `
+            <div class="radnik-row">
+                <span onclick="editRadnika(${ri})">👤 ${radnik}</span>
+                <button class="btn btn-danger btn-sm" onclick="obrisiRadnika(${ri})" style="padding:3px 8px;font-size:12px;">✕</button>
+            </div>
+        `).join('');
+    }
+}
+
+function dodajRadnika() {
+    const ime = prompt('Unesite ime radnika:');
+    if (ime && ime.trim()) {
+        const { ji, si } = selectedCell;
+        const soba = data.jedinice[ji].sobe[si];
+        if (!soba.radnici) soba.radnici = [];
+        soba.radnici.push(ime.trim());
+        saveToCloud();
+        renderRadnici();
+    }
+}
+
+function editRadnika(ri) {
+    const { ji, si } = selectedCell;
+    const soba = data.jedinice[ji].sobe[si];
+    const novoIme = prompt('Uredi ime radnika:', soba.radnici[ri]);
+    if (novoIme && novoIme.trim()) {
+        soba.radnici[ri] = novoIme.trim();
+        saveToCloud();
+        renderRadnici();
+    }
+}
+
+function obrisiRadnika(ri) {
+    if (confirm('Obrisati radnika?')) {
+        const { ji, si } = selectedCell;
+        data.jedinice[ji].sobe[si].radnici.splice(ri, 1);
+        saveToCloud();
+        renderRadnici();
+    }
+}
+
+// ==================== PLAĆANJE ====================
 function confirmPay() {
     if (!selectedCell) return;
     const { ji, si, mesec } = selectedCell;
@@ -242,7 +317,19 @@ function confirmPay() {
     if (!soba.cenaMesec) soba.cenaMesec = {};
     soba.cenaMesec[mesec] = iznos;
     saveToCloud();
-    closeModal('payModal');
+    closeModal('sobaModal');
+    renderMatrix();
+}
+
+function obrisiPlacanje() {
+    if (!selectedCell) return;
+    const { ji, si, mesec } = selectedCell;
+    const soba = data.jedinice[ji].sobe[si];
+    if (soba.cenaMesec && soba.cenaMesec[mesec]) {
+        delete soba.cenaMesec[mesec];
+    }
+    saveToCloud();
+    closeModal('sobaModal');
     renderMatrix();
 }
 
@@ -266,7 +353,7 @@ function addSoba() {
     const ji = parseInt(document.getElementById('selectJedinica').value);
     const name = document.getElementById('newSobaName').value.trim();
     if (!name) return;
-    data.jedinice[ji].sobe.push({ ime: name, placenoMesec: null, placenoGodina: null, cenaMesec: {} });
+    data.jedinice[ji].sobe.push({ ime: name, radnici: [], placenoMesec: null, placenoGodina: null, cenaMesec: {} });
     saveToCloud(); closeModal('addSobaModal'); renderMatrix();
 }
 
@@ -291,18 +378,17 @@ function renderManager() {
         jedinica.sobe.forEach(soba => {
             let sobaUkupno = 0;
             for (let m = 1; m <= 12; m++) {
-                const cena = soba.cenaMesec && soba.cenaMesec[m] ? soba.cenaMesec[m] : 0;
+                const cena = (soba.cenaMesec && soba.cenaMesec[m]) ? soba.cenaMesec[m] : 0;
                 sobaUkupno += cena;
             }
             jedinicaUkupno += sobaUkupno;
             ukupno += sobaUkupno;
             html += `<div style="margin-left:20px;margin-top:5px;display:flex;justify-content:space-between;">
-                <span>🚪 Soba ${soba.ime}</span>
+                <span>🚪 Soba ${soba.ime} (${soba.radnici ? soba.radnici.length : 0}👤)</span>
                 <span><strong>${sobaUkupno.toFixed(2)} €</strong></span>
             </div>`;
-            // Prikaži po mesecima
             for (let m = 1; m <= 12; m++) {
-                const cena = soba.cenaMesec && soba.cenaMesec[m] ? soba.cenaMesec[m] : null;
+                const cena = (soba.cenaMesec && soba.cenaMesec[m]) ? soba.cenaMesec[m] : null;
                 if (cena) {
                     html += `<div style="margin-left:40px;font-size:12px;color:#666;">${getMesecIme(m).substring(0,3)}: ${cena.toFixed(2)} €</div>`;
                 }
@@ -327,7 +413,7 @@ function printManager() {
             let sobaUkupno = 0;
             for (let m = 1; m <= 12; m++) { sobaUkupno += (soba.cenaMesec && soba.cenaMesec[m]) ? soba.cenaMesec[m] : 0; }
             jedinicaUkupno += sobaUkupno;
-            printContent += `<div style="margin-left:20px;display:flex;justify-content:space-between;"><span>🚪 Soba ${soba.ime}</span><span><strong>${sobaUkupno.toFixed(2)} €</strong></span></div>`;
+            printContent += `<div style="margin-left:20px;display:flex;justify-content:space-between;"><span>🚪 Soba ${soba.ime} (${soba.radnici ? soba.radnici.length : 0}👤)</span><span><strong>${sobaUkupno.toFixed(2)} €</strong></span></div>`;
         });
         ukupno += jedinicaUkupno;
         printContent += `<div style="text-align:right;"><strong>Jedinica: ${jedinicaUkupno.toFixed(2)} €</strong></div></div>`;
