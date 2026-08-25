@@ -62,6 +62,11 @@
         .sync-online { background: #28a745; }
         .sync-offline { background: #dc3545; }
 
+        .jedinica-header { background: #667eea; color: white; padding: 12px; font-weight: bold; font-size: 16px; border-radius: 8px 8px 0 0; }
+        .placene-sekcija { padding: 10px; }
+        .neplacene-sekcija { padding: 10px; border-top: 1px solid #eee; }
+        .sumarni-pregled { background: #f8f9fa; border: 2px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 15px; display: flex; justify-content: space-around; text-align: center; }
+
         @media print {
             @page { size: A4 portrait; margin: 8mm; }
             body { background: white !important; }
@@ -169,35 +174,39 @@
 
 <!-- MODAL ZA MENADŽER IZVEŠTAJ -->
 <div id="managerModal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width:600px;">
         <div class="modal-header">
             <h3>👨‍💼 Menadžer - Izveštaj</h3>
             <button onclick="closeModal('managerModal')" style="font-size:24px;background:none;border:none;">&times;</button>
         </div>
-        <div style="margin-bottom:15px;">
-            <label style="display:block;margin-bottom:5px;font-weight:bold;">Mesec:</label>
-            <select id="reportMesec" onchange="renderReport()" class="search-input">
-                <option value="1">Januar</option>
-                <option value="2">Februar</option>
-                <option value="3">Mart</option>
-                <option value="4">April</option>
-                <option value="5">Maj</option>
-                <option value="6">Jun</option>
-                <option value="7">Jul</option>
-                <option value="8">Avgust</option>
-                <option value="9">Septembar</option>
-                <option value="10">Oktobar</option>
-                <option value="11">Novembar</option>
-                <option value="12">Decembar</option>
-            </select>
-            <label style="display:block;margin-bottom:5px;font-weight:bold;">Godina:</label>
-            <select id="reportGodina" onchange="renderReport()" class="search-input">
-                <option value="2024">2024</option>
-                <option value="2025">2025</option>
-                <option value="2026">2026</option>
-                <option value="2027">2027</option>
-                <option value="2028">2028</option>
-            </select>
+        <div style="margin-bottom:15px;display:flex;gap:10px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:150px;">
+                <label style="display:block;margin-bottom:5px;font-weight:bold;">Mesec:</label>
+                <select id="reportMesec" onchange="renderReport()" class="search-input">
+                    <option value="1">Januar</option>
+                    <option value="2">Februar</option>
+                    <option value="3">Mart</option>
+                    <option value="4">April</option>
+                    <option value="5">Maj</option>
+                    <option value="6">Jun</option>
+                    <option value="7">Jul</option>
+                    <option value="8">Avgust</option>
+                    <option value="9">Septembar</option>
+                    <option value="10">Oktobar</option>
+                    <option value="11">Novembar</option>
+                    <option value="12">Decembar</option>
+                </select>
+            </div>
+            <div style="flex:1;min-width:120px;">
+                <label style="display:block;margin-bottom:5px;font-weight:bold;">Godina:</label>
+                <select id="reportGodina" onchange="renderReport()" class="search-input">
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                </select>
+            </div>
         </div>
         <div id="reportContent"></div>
         <button onclick="printReport()" class="btn btn-info" style="width:100%;margin-top:10px;">🖨️ Štampaj A4</button>
@@ -525,31 +534,81 @@ function renderReport() {
     const godina = parseInt(document.getElementById('reportGodina').value);
     const c = document.getElementById('reportContent');
     
-    let html = `<h4 style="margin-bottom:15px;">📊 Izveštaj - ${getMesecIme(mesec)} ${godina}</h4>`;
+    let ukupnoSoba = 0;
+    let placenih = 0;
+    let neplacenih = 0;
+    
+    let html = `<h4 style="margin-bottom:15px;text-align:center;font-size:18px;">📊 IZVEŠTAJ - ${getMesecIme(mesec).toUpperCase()} ${godina}</h4>`;
     
     if (data.jedinice.length === 0) {
-        html += '<p style="color:#999;">Nema podataka.</p>';
+        html += '<p style="color:#999;text-align:center;">Nema podataka.</p>';
+        c.innerHTML = html;
+        return;
     }
     
     data.jedinice.forEach(jedinica => {
-        html += `<div style="background:#f8f9fa;padding:10px;border-radius:5px;margin-bottom:10px;">
-            <strong>🏢 ${jedinica.ime}</strong><br>`;
+        const sobe = jedinica.sobe || [];
+        const placeneSobe = sobe.filter(s => s.placenoMesec === mesec && s.placenoGodina === godina);
+        const neplaceneSobe = sobe.filter(s => !(s.placenoMesec === mesec && s.placenoGodina === godina));
         
-        if (jedinica.sobe && jedinica.sobe.length > 0) {
-            jedinica.sobe.forEach(soba => {
-                const placeno = soba.placenoMesec === mesec && soba.placenoGodina === godina;
-                const brojRadnika = soba.radnici ? soba.radnici.length : 0;
-                html += `<div style="margin-left:15px;margin-top:5px;">
-                    🚪 Soba ${soba.ime} (👤${brojRadnika}): <span class="badge ${placeno ? 'badge-placeno' : 'badge-nije'}">${placeno ? '✅ Plaćeno' : '❌ Nije plaćeno'}</span>
-                    ${placeno && soba.placenoDatum ? `<span style="font-size:11px;color:#666;"> (${soba.placenoDatum})</span>` : ''}
-                </div>`;
-            });
-        } else {
-            html += '<div style="margin-left:15px;margin-top:5px;color:#999;">Nema soba.</div>';
-        }
+        ukupnoSoba += sobe.length;
+        placenih += placeneSobe.length;
+        neplacenih += neplaceneSobe.length;
         
-        html += '</div>';
+        html += `
+            <div style="background:white;border:2px solid #ddd;border-radius:8px;margin-bottom:15px;overflow:hidden;">
+                <div class="jedinica-header">
+                    🏢 ${jedinica.ime}
+                    <span style="float:right;font-size:13px;">${sobe.length} soba</span>
+                </div>
+                
+                ${placeneSobe.length > 0 ? `
+                    <div class="placene-sekcija">
+                        <div style="font-weight:bold;color:#28a745;margin-bottom:8px;">✅ PLAĆENE (${placeneSobe.length}):</div>
+                        ${placeneSobe.map(soba => {
+                            const brojRadnika = soba.radnici ? soba.radnici.length : 0;
+                            return `<div style="padding:5px 10px;border-left:3px solid #28a745;margin-bottom:3px;font-size:14px;">
+                                🚪 Soba ${soba.ime} (👤${brojRadnika}) 
+                                ${soba.placenoDatum ? `<span style="font-size:11px;color:#666;">- ${soba.placenoDatum}</span>` : ''}
+                            </div>`;
+                        }).join('')}
+                    </div>
+                ` : ''}
+                
+                ${neplaceneSobe.length > 0 ? `
+                    <div class="neplacene-sekcija">
+                        <div style="font-weight:bold;color:#dc3545;margin-bottom:8px;">❌ NEPLAĆENE (${neplaceneSobe.length}):</div>
+                        ${neplaceneSobe.map(soba => {
+                            const brojRadnika = soba.radnici ? soba.radnici.length : 0;
+                            return `<div style="padding:5px 10px;border-left:3px solid #dc3545;margin-bottom:3px;font-size:14px;">
+                                🚪 Soba ${soba.ime} (👤${brojRadnika})
+                            </div>`;
+                        }).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
     });
+    
+    // ZBIRNI PREGLED NA VRHU
+    html = `
+        <div class="sumarni-pregled">
+            <div>
+                <div style="font-size:22px;font-weight:bold;">${ukupnoSoba}</div>
+                <div style="font-size:12px;color:#666;">UKUPNO SOBA</div>
+            </div>
+            <div style="border-left:1px solid #ddd;"></div>
+            <div>
+                <div style="font-size:22px;font-weight:bold;color:#28a745;">${placenih}</div>
+                <div style="font-size:12px;color:#28a745;font-weight:bold;">PLAĆENO</div>
+            </div>
+            <div style="border-left:1px solid #ddd;"></div>
+            <div>
+                <div style="font-size:22px;font-weight:bold;color:#dc3545;">${neplacenih}</div>
+                <div style="font-size:12px;color:#dc3545;font-weight:bold;">NIJE PLAĆENO</div>
+            </div>
+        </div>
+    ` + html;
     
     c.innerHTML = html;
 }
@@ -568,16 +627,25 @@ function printReport() {
         <hr>`;
     
     data.jedinice.forEach(jedinica => {
-        printContent += `<div style="margin-bottom:15px;">
+        const placeneSobe = jedinica.sobe.filter(s => s.placenoMesec === mesec && s.placenoGodina === godina);
+        const neplaceneSobe = jedinica.sobe.filter(s => !(s.placenoMesec === mesec && s.placenoGodina === godina));
+        
+        printContent += `<div style="margin-bottom:15px;border:1px solid #ddd;padding:10px;">
             <strong>🏢 ${jedinica.ime}</strong><br>`;
         
-        jedinica.sobe.forEach(soba => {
-            const placeno = soba.placenoMesec === mesec && soba.placenoGodina === godina;
-            const brojRadnika = soba.radnici ? soba.radnici.length : 0;
-            printContent += `<div style="margin-left:15px;margin-top:5px;">
-                🚪 Soba ${soba.ime} (👤${brojRadnika}): <strong>${placeno ? '✅ PLAĆENO' : '❌ NIJE PLAĆENO'}</strong>
-            </div>`;
-        });
+        if (placeneSobe.length > 0) {
+            printContent += `<div style="margin-top:5px;color:#28a745;"><strong>✅ Plaćene:</strong></div>`;
+            placeneSobe.forEach(soba => {
+                printContent += `<div style="margin-left:15px;">🚪 Soba ${soba.ime}</div>`;
+            });
+        }
+        
+        if (neplaceneSobe.length > 0) {
+            printContent += `<div style="margin-top:5px;color:#dc3545;"><strong>❌ Neplaćene:</strong></div>`;
+            neplaceneSobe.forEach(soba => {
+                printContent += `<div style="margin-left:15px;">🚪 Soba ${soba.ime}</div>`;
+            });
+        }
         
         printContent += '</div>';
     });
