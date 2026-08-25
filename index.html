@@ -105,7 +105,7 @@
     </div>
 </div>
 
-<!-- MODALI -->
+<!-- MODAL ZA DODAVANJE JEDINICE -->
 <div id="addJedinicaModal" class="modal">
     <div class="modal-content">
         <div class="modal-header"><h3>Dodaj jedinicu</h3><button onclick="closeModal('addJedinicaModal')" style="font-size:24px;background:none;border:none;">&times;</button></div>
@@ -114,6 +114,7 @@
     </div>
 </div>
 
+<!-- MODAL ZA DODAVANJE SOBE -->
 <div id="addSobaModal" class="modal">
     <div class="modal-content">
         <div class="modal-header"><h3>Dodaj sobu</h3><button onclick="closeModal('addSobaModal')" style="font-size:24px;background:none;border:none;">&times;</button></div>
@@ -123,6 +124,7 @@
     </div>
 </div>
 
+<!-- MODAL ZA SOBU (radnici + plaćanje) -->
 <div id="sobaModal" class="modal">
     <div class="modal-content">
         <div class="modal-header"><h3 id="sobaModalTitle"></h3><button onclick="closeModal('sobaModal')" style="font-size:24px;background:none;border:none;">&times;</button></div>
@@ -143,6 +145,7 @@
     </div>
 </div>
 
+<!-- MODAL ZA MENADŽER -->
 <div id="managerModal" class="modal">
     <div class="modal-content" style="max-width:800px;">
         <div class="modal-header"><h3>👨‍💼 Menadžer - Finansijski izveštaj</h3><button onclick="closeModal('managerModal')" style="font-size:24px;background:none;border:none;">&times;</button></div>
@@ -154,11 +157,23 @@
     </div>
 </div>
 
+<!-- MODAL ZA PREGLED RADNIKA -->
 <div id="radniciModal" class="modal">
     <div class="modal-content" style="max-width:800px;">
         <div class="modal-header"><h3>👥 Pregled radnika po jedinicama</h3><button onclick="closeModal('radniciModal')" style="font-size:24px;background:none;border:none;">&times;</button></div>
         <div id="radniciReport"></div>
         <button onclick="printRadnici()" class="btn btn-info" style="width:100%;margin-top:10px;">🖨️ Štampaj A4</button>
+    </div>
+</div>
+
+<!-- MODAL ZA EXPORT -->
+<div id="exportModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h3>📤 Izvoz podataka</h3><button onclick="closeModal('exportModal')" style="font-size:24px;background:none;border:none;">&times;</button></div>
+        <p style="margin-bottom:15px;">Izaberite kako želite da sačuvate ili pošaljete backup:</p>
+        <button onclick="downloadBackup()" class="btn btn-info" style="width:100%;margin-bottom:10px;">💾 Preuzmi fajl</button>
+        <button onclick="shareBackup()" class="btn btn-success" style="width:100%;margin-bottom:10px;">📤 Podijeli (Gmail, Drive, itd.)</button>
+        <button onclick="closeModal('exportModal')" class="btn btn-danger" style="width:100%;">Zatvori</button>
     </div>
 </div>
 
@@ -454,20 +469,31 @@ function printRadnici() {
 }
 
 // ==================== EXPORT / IMPORT ====================
-async function exportData() {
-    const jsonStr = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonStr], { type: 'application/json' });
-    const file = new File([blob], `smjestaj_backup_${new Date().toISOString().slice(0,10)}.json`, { type: 'application/json' });
+function exportData() {
+    showModal('exportModal');
+}
 
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try { await navigator.share({ files: [file], title: 'Smještaj Backup', text: 'Backup fajl sa podacima o smještaju' }); return; }
-        catch (err) { if (err.name === 'AbortError') return; console.log('Share neuspeo, koristim download:', err); }
-    }
-
+function downloadBackup() {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `smjestaj_backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.href = url;
+    a.download = `smjestaj_backup_${new Date().toISOString().slice(0,10)}.json`;
     document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+async function shareBackup() {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const file = new File([blob], `smjestaj_backup_${new Date().toISOString().slice(0,10)}.json`, { type: 'application/json' });
+    if (navigator.share) {
+        try {
+            await navigator.share({ files: [file], title: 'Smještaj Backup', text: 'Backup fajl sa podacima o smještaju' });
+        } catch (err) {
+            if (err.name !== 'AbortError') alert('Dijeljenje nije uspjelo. Pokušajte preuzeti fajl.');
+        }
+    } else {
+        alert('Web Share API nije podržan na ovom uređaju. Koristite Preuzmi fajl.');
+    }
 }
 
 function importData() {
