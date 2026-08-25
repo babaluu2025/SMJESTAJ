@@ -6,6 +6,14 @@
     <title>Smještaj ☁️</title>
     <meta name="theme-color" content="#667eea">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+    <script>
+        const blob = new Blob([JSON.stringify({
+            name: "Smještaj ☁️", short_name: "Smještaj", start_url: "/", display: "standalone",
+            background_color: "#f5f5f5", theme_color: "#667eea",
+            icons: [{src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>",sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]
+        })], {type:'application/json'});
+        document.head.insertAdjacentHTML('beforeend', `<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -28,8 +36,9 @@
         .btn-warning { background: #ffc107; color: black; }
         .btn-sm { padding: 5px 12px; font-size: 13px; }
         
-        .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 1px 5px rgba(0,0,0,0.1); cursor: pointer; }
+        .card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 5px rgba(0,0,0,0.1); cursor: pointer; transition: all 0.2s; }
         .card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+        .card:active { transform: scale(0.98); }
         
         .soba-zelena { border-left: 5px solid #28a745; }
         .soba-crvena { border-left: 5px solid #dc3545; }
@@ -39,7 +48,7 @@
         .modal-content { background: white; padding: 25px; border-radius: 10px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         
-        .search-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px; }
+        .search-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px; font-size: 16px; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
@@ -103,7 +112,7 @@
             <button onclick="closeModal('addModal')" style="font-size:24px;background:none;border:none;">&times;</button>
         </div>
         <input type="text" id="addInput" placeholder="Naziv" class="search-input">
-        <button onclick="saveNew()" class="btn btn-success">Sačuvaj</button>
+        <button onclick="saveNew()" class="btn btn-success" style="width:100%;">Sačuvaj</button>
     </div>
 </div>
 
@@ -115,7 +124,7 @@
             <button onclick="closeModal('renameModal')" style="font-size:24px;background:none;border:none;">&times;</button>
         </div>
         <input type="text" id="renameInput" placeholder="Novo ime" class="search-input">
-        <button onclick="saveRename()" class="btn btn-success">Sačuvaj</button>
+        <button onclick="saveRename()" class="btn btn-success" style="width:100%;">Sačuvaj</button>
     </div>
 </div>
 
@@ -126,9 +135,9 @@
             <h3>💰 Plaćanje</h3>
             <button onclick="closeModal('payModal')" style="font-size:24px;background:none;border:none;">&times;</button>
         </div>
-        <p id="paySobaInfo" style="margin-bottom:15px;"></p>
-        <div class="form-group">
-            <label>Mesec:</label>
+        <p id="paySobaInfo" style="margin-bottom:15px;font-size:16px;"></p>
+        <div style="margin-bottom:15px;">
+            <label style="display:block;margin-bottom:5px;font-weight:bold;">Mesec:</label>
             <select id="payMesec" class="search-input">
                 <option value="1">Januar</option>
                 <option value="2">Februar</option>
@@ -144,16 +153,17 @@
                 <option value="12">Decembar</option>
             </select>
         </div>
-        <div class="form-group">
-            <label>Godina:</label>
+        <div style="margin-bottom:15px;">
+            <label style="display:block;margin-bottom:5px;font-weight:bold;">Godina:</label>
             <select id="payGodina" class="search-input">
                 <option value="2024">2024</option>
                 <option value="2025">2025</option>
                 <option value="2026">2026</option>
                 <option value="2027">2027</option>
+                <option value="2028">2028</option>
             </select>
         </div>
-        <button onclick="confirmPay()" class="btn btn-success" style="width:100%;margin-top:10px;">✅ Potvrdi plaćanje</button>
+        <button onclick="confirmPay()" class="btn btn-success" style="width:100%;padding:12px;font-size:16px;">✅ Potvrdi plaćanje</button>
     </div>
 </div>
 
@@ -165,7 +175,7 @@
             <button onclick="closeModal('managerModal')" style="font-size:24px;background:none;border:none;">&times;</button>
         </div>
         <div style="margin-bottom:15px;">
-            <label>Izaberite mesec:</label>
+            <label style="display:block;margin-bottom:5px;font-weight:bold;">Mesec:</label>
             <select id="reportMesec" onchange="renderReport()" class="search-input">
                 <option value="1">Januar</option>
                 <option value="2">Februar</option>
@@ -180,11 +190,13 @@
                 <option value="11">Novembar</option>
                 <option value="12">Decembar</option>
             </select>
+            <label style="display:block;margin-bottom:5px;font-weight:bold;">Godina:</label>
             <select id="reportGodina" onchange="renderReport()" class="search-input">
                 <option value="2024">2024</option>
                 <option value="2025">2025</option>
                 <option value="2026">2026</option>
                 <option value="2027">2027</option>
+                <option value="2028">2028</option>
             </select>
         </div>
         <div id="reportContent"></div>
@@ -207,6 +219,7 @@ let renamingType = null;
 let renamingJedinica = null;
 let renamingSoba = null;
 let payingSoba = null;
+let addingType = null;
 
 function updateSyncStatus(online) {
     const dot = document.getElementById('syncDot');
@@ -261,6 +274,8 @@ document.getElementById('logoutBtn').onclick = () => {
 
 // ==================== RENDER ====================
 function renderJedinice() {
+    currentJedinica = null;
+    currentSoba = null;
     const c = document.getElementById('mainContent');
     c.innerHTML = `
         <h2 style="margin-bottom:15px;">🏢 Jedinice</h2>
@@ -268,17 +283,14 @@ function renderJedinice() {
         ${data.jedinice.map((jedinica, ji) => `
             <div class="card" onclick="openSobe(${ji})">
                 <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <h3>🏢 ${jedinica.ime}</h3>
-                    <div>
-                        <span style="font-size:12px;color:#666;">${jedinica.sobe ? jedinica.sobe.length : 0} soba</span>
-                    </div>
+                    <h3 style="font-size:18px;">🏢 ${jedinica.ime}</h3>
+                    <span style="font-size:12px;color:#666;">${jedinica.sobe ? jedinica.sobe.length : 0} soba</span>
                 </div>
             </div>
         `).join('')}
-        <button class="btn btn-success" onclick="showAddModal('jedinica')" style="width:100%;margin-top:15px;">+ Dodaj jedinicu</button>
+        <button class="btn btn-success" onclick="showAddModal('jedinica')" style="width:100%;margin-top:15px;padding:15px;font-size:16px;">+ Dodaj jedinicu</button>
     `;
     
-    // Dug pritisak za preimenovanje
     c.querySelectorAll('.card').forEach((card, index) => {
         let longPressTimer;
         card.ontouchstart = (e) => {
@@ -294,7 +306,10 @@ function renderJedinice() {
 
 function openSobe(jedinicaIndex) {
     currentJedinica = jedinicaIndex;
+    currentSoba = null;
     const jedinica = data.jedinice[jedinicaIndex];
+    if (!jedinica.sobe) jedinica.sobe = [];
+    
     const c = document.getElementById('mainContent');
     c.innerHTML = `
         <button class="btn btn-info btn-sm" onclick="renderJedinice()" style="margin-bottom:15px;">↩ Nazad</button>
@@ -303,19 +318,26 @@ function openSobe(jedinicaIndex) {
         ${jedinica.sobe.map((soba, si) => {
             const isPlaceno = soba.placenoMesec === new Date().getMonth()+1 && soba.placenoGodina === new Date().getFullYear();
             const klasa = isPlaceno ? 'soba-zelena' : 'soba-crvena';
+            const brojRadnika = soba.radnici ? soba.radnici.length : 0;
             return `
                 <div class="card ${klasa}">
-                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-                        <h3>🚪 Soba ${soba.ime}</h3>
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;" onclick="openSobaDetalji(${si})">
+                        <div>
+                            <h3 style="font-size:18px;">🚪 Soba ${soba.ime}</h3>
+                            <span style="font-size:12px;color:#666;">👤 ${brojRadnika} radnika</span>
+                        </div>
                         <span class="badge ${isPlaceno ? 'badge-placeno' : 'badge-nije'}">
                             ${isPlaceno ? '✅ Plaćeno' : '❌ Nije plaćeno'}
                         </span>
                     </div>
-                    <button class="btn btn-success btn-sm" onclick="event.stopPropagation(); openPayModal(${si});" style="margin-top:10px;">💰 Plati</button>
+                    <div style="display:flex;gap:5px;margin-top:10px;">
+                        <button class="btn btn-success btn-sm" onclick="event.stopPropagation(); openPayModal(${si});" style="flex:1;">💰 Plati</button>
+                        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); obrisiSobu(${si});">🗑</button>
+                    </div>
                 </div>
             `;
         }).join('')}
-        <button class="btn btn-success" onclick="showAddModal('soba')" style="width:100%;margin-top:15px;">+ Dodaj sobu</button>
+        <button class="btn btn-success" onclick="showAddModal('soba')" style="width:100%;margin-top:15px;padding:15px;font-size:16px;">+ Dodaj sobu</button>
     `;
     
     c.querySelectorAll('.card').forEach((card, index) => {
@@ -331,11 +353,49 @@ function openSobe(jedinicaIndex) {
     });
 }
 
-// ==================== MODALI ====================
+function openSobaDetalji(sobaIndex) {
+    currentSoba = sobaIndex;
+    const jedinica = data.jedinice[currentJedinica];
+    const soba = jedinica.sobe[sobaIndex];
+    
+    if (!soba.radnici) soba.radnici = [];
+    
+    const c = document.getElementById('mainContent');
+    c.innerHTML = `
+        <button class="btn btn-info btn-sm" onclick="openSobe(${currentJedinica})" style="margin-bottom:15px;">↩ Nazad na sobe</button>
+        <h2 style="margin-bottom:5px;">🚪 Soba ${soba.ime}</h2>
+        <p style="color:#666;margin-bottom:15px;">🏢 ${jedinica.ime}</p>
+        
+        ${soba.radnici.length === 0 ? '<p style="color:#999;">Nema radnika u sobi. Kliknite "+ Dodaj radnika".</p>' : ''}
+        
+        ${soba.radnici.map((radnik, ri) => `
+            <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:18px;">👤 ${radnik}</span>
+                <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); obrisiRadnika(${ri})">✕</button>
+            </div>
+        `).join('')}
+        
+        <button class="btn btn-success" onclick="dodajRadnika()" style="width:100%;margin-top:15px;padding:15px;font-size:16px;">+ Dodaj radnika</button>
+    `;
+    
+    c.querySelectorAll('.card').forEach((card, index) => {
+        let longPressTimer;
+        card.ontouchstart = (e) => {
+            longPressTimer = setTimeout(() => {
+                e.preventDefault();
+                preimenujRadnika(index);
+            }, 500);
+        };
+        card.ontouchend = () => { if (longPressTimer) clearTimeout(longPressTimer); };
+        card.oncontextmenu = (e) => { e.preventDefault(); preimenujRadnika(index); };
+    });
+}
+
+// ==================== DODAVANJE ====================
 function showAddModal(type) {
+    addingType = type;
     document.getElementById('addModalTitle').textContent = type === 'jedinica' ? 'Dodaj jedinicu' : 'Dodaj sobu';
     document.getElementById('addInput').value = '';
-    window.addType = type;
     showModal('addModal');
 }
 
@@ -343,21 +403,57 @@ function saveNew() {
     const name = document.getElementById('addInput').value.trim();
     if (!name) return;
     
-    if (window.addType === 'jedinica') {
+    if (addingType === 'jedinica') {
         data.jedinice.push({ ime: name, sobe: [] });
-    } else if (window.addType === 'soba' && currentJedinica !== null) {
-        data.jedinice[currentJedinica].sobe.push({ ime: name, placenoMesec: null, placenoGodina: null, placenoDatum: null });
-    }
-    
-    saveToCloud();
-    closeModal('addModal');
-    if (currentJedinica !== null && window.addType === 'soba') {
-        openSobe(currentJedinica);
-    } else {
+        saveToCloud();
+        closeModal('addModal');
         renderJedinice();
+    } else if (addingType === 'soba' && currentJedinica !== null) {
+        data.jedinice[currentJedinica].sobe.push({ ime: name, radnici: [], placenoMesec: null, placenoGodina: null, placenoDatum: null });
+        saveToCloud();
+        closeModal('addModal');
+        openSobe(currentJedinica);
     }
 }
 
+// ==================== RADNICI ====================
+function dodajRadnika() {
+    const ime = prompt('Unesite ime radnika:');
+    if (ime && ime.trim()) {
+        data.jedinice[currentJedinica].sobe[currentSoba].radnici.push(ime.trim());
+        saveToCloud();
+        openSobaDetalji(currentSoba);
+    }
+}
+
+function obrisiRadnika(radnikIndex) {
+    if (confirm('Obrisati radnika?')) {
+        data.jedinice[currentJedinica].sobe[currentSoba].radnici.splice(radnikIndex, 1);
+        saveToCloud();
+        openSobaDetalji(currentSoba);
+    }
+}
+
+function preimenujRadnika(radnikIndex) {
+    const staroIme = data.jedinice[currentJedinica].sobe[currentSoba].radnici[radnikIndex];
+    const novoIme = prompt('Novo ime radnika:', staroIme);
+    if (novoIme && novoIme.trim()) {
+        data.jedinice[currentJedinica].sobe[currentSoba].radnici[radnikIndex] = novoIme.trim();
+        saveToCloud();
+        openSobaDetalji(currentSoba);
+    }
+}
+
+// ==================== SOBE ====================
+function obrisiSobu(sobaIndex) {
+    if (confirm('Obrisati sobu i sve radnike u njoj?')) {
+        data.jedinice[currentJedinica].sobe.splice(sobaIndex, 1);
+        saveToCloud();
+        openSobe(currentJedinica);
+    }
+}
+
+// ==================== PREIMENOVANJE ====================
 function showRenameModal(type, index) {
     renamingType = type;
     if (type === 'jedinica') {
@@ -376,19 +472,18 @@ function saveRename() {
     
     if (renamingType === 'jedinica') {
         data.jedinice[renamingJedinica].ime = name;
+        saveToCloud();
+        closeModal('renameModal');
+        renderJedinice();
     } else if (renamingType === 'soba') {
         data.jedinice[currentJedinica].sobe[renamingSoba].ime = name;
-    }
-    
-    saveToCloud();
-    closeModal('renameModal');
-    if (currentJedinica !== null && renamingType === 'soba') {
+        saveToCloud();
+        closeModal('renameModal');
         openSobe(currentJedinica);
-    } else {
-        renderJedinice();
     }
 }
 
+// ==================== PLAĆANJE ====================
 function openPayModal(sobaIndex) {
     payingSoba = sobaIndex;
     const soba = data.jedinice[currentJedinica].sobe[sobaIndex];
@@ -432,17 +527,26 @@ function renderReport() {
     
     let html = `<h4 style="margin-bottom:15px;">📊 Izveštaj - ${getMesecIme(mesec)} ${godina}</h4>`;
     
+    if (data.jedinice.length === 0) {
+        html += '<p style="color:#999;">Nema podataka.</p>';
+    }
+    
     data.jedinice.forEach(jedinica => {
         html += `<div style="background:#f8f9fa;padding:10px;border-radius:5px;margin-bottom:10px;">
             <strong>🏢 ${jedinica.ime}</strong><br>`;
         
-        jedinica.sobe.forEach(soba => {
-            const placeno = soba.placenoMesec === mesec && soba.placenoGodina === godina;
-            html += `<div style="margin-left:15px;margin-top:5px;">
-                🚪 Soba ${soba.ime}: <span class="badge ${placeno ? 'badge-placeno' : 'badge-nije'}">${placeno ? '✅ Plaćeno' : '❌ Nije plaćeno'}</span>
-                ${placeno && soba.placenoDatum ? `<span style="font-size:12px;color:#666;"> (${soba.placenoDatum})</span>` : ''}
-            </div>`;
-        });
+        if (jedinica.sobe && jedinica.sobe.length > 0) {
+            jedinica.sobe.forEach(soba => {
+                const placeno = soba.placenoMesec === mesec && soba.placenoGodina === godina;
+                const brojRadnika = soba.radnici ? soba.radnici.length : 0;
+                html += `<div style="margin-left:15px;margin-top:5px;">
+                    🚪 Soba ${soba.ime} (👤${brojRadnika}): <span class="badge ${placeno ? 'badge-placeno' : 'badge-nije'}">${placeno ? '✅ Plaćeno' : '❌ Nije plaćeno'}</span>
+                    ${placeno && soba.placenoDatum ? `<span style="font-size:11px;color:#666;"> (${soba.placenoDatum})</span>` : ''}
+                </div>`;
+            });
+        } else {
+            html += '<div style="margin-left:15px;margin-top:5px;color:#999;">Nema soba.</div>';
+        }
         
         html += '</div>';
     });
@@ -460,16 +564,18 @@ function printReport() {
     const godina = parseInt(document.getElementById('reportGodina').value);
     
     let printContent = `<h2 style="text-align:center;">SMJEŠTAJ - Izveštaj</h2>
-        <p style="text-align:center;">${getMesecIme(mesec)} ${godina}</p>`;
+        <p style="text-align:center;">${getMesecIme(mesec)} ${godina}</p>
+        <hr>`;
     
     data.jedinice.forEach(jedinica => {
-        printContent += `<div style="margin-bottom:15px;border-bottom:1px solid #ddd;padding-bottom:10px;">
+        printContent += `<div style="margin-bottom:15px;">
             <strong>🏢 ${jedinica.ime}</strong><br>`;
         
         jedinica.sobe.forEach(soba => {
             const placeno = soba.placenoMesec === mesec && soba.placenoGodina === godina;
+            const brojRadnika = soba.radnici ? soba.radnici.length : 0;
             printContent += `<div style="margin-left:15px;margin-top:5px;">
-                🚪 Soba ${soba.ime}: <strong>${placeno ? '✅ PLAĆENO' : '❌ NIJE PLAĆENO'}</strong>
+                🚪 Soba ${soba.ime} (👤${brojRadnika}): <strong>${placeno ? '✅ PLAĆENO' : '❌ NIJE PLAĆENO'}</strong>
             </div>`;
         });
         
