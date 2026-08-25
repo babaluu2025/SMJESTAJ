@@ -175,7 +175,7 @@ let supabaseClient = null;
 try { supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) {}
 
 let data = { jedinice: [] };
-let selectedCell = null; // { ji, si, mesec }
+let selectedCell = null;
 
 function updateSyncStatus(online) {
     const dot = document.getElementById('syncDot');
@@ -229,9 +229,9 @@ function renderMatrix() {
         jedinica.sobe.forEach((soba, si) => {
             html += `<tr><td class="soba-naziv" style="text-align:left;">🚪 ${soba.ime} (${soba.radnici ? soba.radnici.length : 0}👤)</td>`;
             for (let m = 1; m <= 12; m++) {
-                const placeno = soba.placenoMesec === m && soba.placenoGodina === new Date().getFullYear();
+                const placeno = soba.placeniMjeseci && soba.placeniMjeseci[m];
                 const klasa = placeno ? 'zelena' : 'crvena';
-                const iznos = (soba.cenaMesec && soba.cenaMesec[m]) ? `<br><small>${soba.cenaMesec[m]}€</small>` : '';
+                const iznos = placeno ? `<br><small>${placeno.iznos}€</small>` : '';
                 html += `<td class="celija ${klasa}" onclick="openSobaModal(${ji},${si},${m})">${placeno ? '✅' + iznos : ''}</td>`;
             }
             html += '</tr>';
@@ -250,7 +250,9 @@ function openSobaModal(ji, si, mesec) {
     
     document.getElementById('sobaModalTitle').textContent = `🚪 ${jedinica.ime} - Soba ${soba.ime}`;
     document.getElementById('payMonthLabel').textContent = `${getMesecIme(mesec)} ${new Date().getFullYear()}`;
-    document.getElementById('payIznos').value = (soba.cenaMesec && soba.cenaMesec[mesec]) ? soba.cenaMesec[mesec] : '';
+    
+    const placeno = soba.placeniMjeseci && soba.placeniMjeseci[mesec];
+    document.getElementById('payIznos').value = placeno ? placeno.iznos : '';
     
     renderRadnici();
     showModal('sobaModal');
@@ -312,10 +314,15 @@ function confirmPay() {
     const { ji, si, mesec } = selectedCell;
     const iznos = parseFloat(document.getElementById('payIznos').value) || 0;
     const soba = data.jedinice[ji].sobe[si];
-    soba.placenoMesec = mesec;
-    soba.placenoGodina = new Date().getFullYear();
-    if (!soba.cenaMesec) soba.cenaMesec = {};
-    soba.cenaMesec[mesec] = iznos;
+    
+    // Čuvamo SVAKI plaćeni mesec posebno
+    if (!soba.placeniMjeseci) soba.placeniMjeseci = {};
+    soba.placeniMjeseci[mesec] = {
+        iznos: iznos,
+        datum: new Date().toLocaleString('hr'),
+        godina: new Date().getFullYear()
+    };
+    
     saveToCloud();
     closeModal('sobaModal');
     renderMatrix();
@@ -325,8 +332,8 @@ function obrisiPlacanje() {
     if (!selectedCell) return;
     const { ji, si, mesec } = selectedCell;
     const soba = data.jedinice[ji].sobe[si];
-    if (soba.cenaMesec && soba.cenaMesec[mesec]) {
-        delete soba.cenaMesec[mesec];
+    if (soba.placeniMjeseci && soba.placeniMjeseci[mesec]) {
+        delete soba.placeniMjeseci[mesec];
     }
     saveToCloud();
     closeModal('sobaModal');
@@ -353,7 +360,7 @@ function addSoba() {
     const ji = parseInt(document.getElementById('selectJedinica').value);
     const name = document.getElementById('newSobaName').value.trim();
     if (!name) return;
-    data.jedinice[ji].sobe.push({ ime: name, radnici: [], placenoMesec: null, placenoGodina: null, cenaMesec: {} });
+    data.jedinice[ji].sobe.push({ ime: name, radnici: [], placeniMjeseci: {} });
     saveToCloud(); closeModal('addSobaModal'); renderMatrix();
 }
 
@@ -378,7 +385,8 @@ function renderManager() {
         jedinica.sobe.forEach(soba => {
             let sobaUkupno = 0;
             for (let m = 1; m <= 12; m++) {
-                const cena = (soba.cenaMesec && soba.cenaMesec[m]) ? soba.cenaMesec[m] : 0;
+                const placeno = soba.placeniMjeseci && soba.placeniMjeseci[m];
+                const cena = placeno ? placeno.iznos : 0;
                 sobaUkupno += cena;
             }
             jedinicaUkupno += sobaUkupno;
@@ -388,9 +396,9 @@ function renderManager() {
                 <span><strong>${sobaUkupno.toFixed(2)} €</strong></span>
             </div>`;
             for (let m = 1; m <= 12; m++) {
-                const cena = (soba.cenaMesec && soba.cenaMesec[m]) ? soba.cenaMesec[m] : null;
-                if (cena) {
-                    html += `<div style="margin-left:40px;font-size:12px;color:#666;">${getMesecIme(m).substring(0,3)}: ${cena.toFixed(2)} €</div>`;
+                const placeno = soba.placeniMjeseci && soba.placeniMjeseci[m];
+                if (placeno) {
+                    html += `<div style="margin-left:40px;font-size:12px;color:#666;">${getMesecIme(m).substring(0,3)}: ${placeno.iznos.toFixed(2)} €</div>`;
                 }
             }
         });
@@ -411,7 +419,10 @@ function printManager() {
         printContent += `<div style="margin-bottom:15px;border:1px solid #ddd;padding:10px;"><strong>🏢 ${jedinica.ime}</strong><br>`;
         jedinica.sobe.forEach(soba => {
             let sobaUkupno = 0;
-            for (let m = 1; m <= 12; m++) { sobaUkupno += (soba.cenaMesec && soba.cenaMesec[m]) ? soba.cenaMesec[m] : 0; }
+            for (let m = 1; m <= 12; m++) {
+                const placeno = soba.placeniMjeseci && soba.placeniMjeseci[m];
+                sobaUkupno += placeno ? placeno.iznos : 0;
+            }
             jedinicaUkupno += sobaUkupno;
             printContent += `<div style="margin-left:20px;display:flex;justify-content:space-between;"><span>🚪 Soba ${soba.ime} (${soba.radnici ? soba.radnici.length : 0}👤)</span><span><strong>${sobaUkupno.toFixed(2)} €</strong></span></div>`;
         });
