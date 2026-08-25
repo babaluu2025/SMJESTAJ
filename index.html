@@ -2,7 +2,7 @@
 <html lang="hr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Smještaj ☁️</title>
     <meta name="theme-color" content="#667eea">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
@@ -17,62 +17,55 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; }
-        .container { max-width: 800px; margin: 0 auto; padding: 15px; }
-        
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; overflow-x: auto; }
+        .container { min-width: 900px; max-width: 1400px; margin: 0 auto; padding: 15px; }
+
         .login-container { display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
         .login-box { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; width: 90%; max-width: 400px; }
         .login-icon { font-size: 4rem; margin-bottom: 20px; }
         .password-input { margin: 20px 0; }
         .password-input input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; }
         .login-btn { background: #667eea; color: white; border: none; padding: 12px 30px; border-radius: 5px; font-size: 16px; cursor: pointer; width: 100%; }
-        
+
         header { background: white; padding: 15px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; margin: 2px; color: white; font-weight: bold; white-space: nowrap; }
+        .header-content { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .btn { padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; margin: 1px; color: white; font-weight: bold; white-space: nowrap; }
         .btn-success { background: #28a745; }
         .btn-info { background: #17a2b8; }
         .btn-danger { background: #dc3545; }
         .btn-warning { background: #ffc107; color: black; }
-        .btn-sm { padding: 5px 12px; font-size: 13px; }
-        
-        .card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 5px rgba(0,0,0,0.1); cursor: pointer; transition: all 0.2s; }
-        .card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
-        .card:active { transform: scale(0.98); }
-        
-        .soba-zelena { border-left: 5px solid #28a745; }
-        .soba-crvena { border-left: 5px solid #dc3545; }
-        
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
-        .modal.active { display: flex; }
-        .modal-content { background: white; padding: 25px; border-radius: 10px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        
-        .search-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px; font-size: 16px; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background: #f8f9fa; font-weight: bold; }
-        
-        .badge { padding: 4px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; display: inline-block; }
-        .badge-placeno { background: #d4edda; color: #155724; }
-        .badge-nije { background: #f8d7da; color: #721c24; }
-        
+
+        .matrix-table { border-collapse: collapse; width: 100%; background: white; }
+        .matrix-table th, .matrix-table td { border: 1px solid #ccc; padding: 4px; text-align: center; vertical-align: middle; }
+        .matrix-table th { background: #f0f0f0; font-size: 11px; }
+        .matrix-table .objekat-naziv { text-align: left; font-weight: bold; font-size: 14px; background: #e3e3e3; }
+        .matrix-table .soba-naziv { text-align: left; font-size: 13px; padding-left: 20px; }
+        .matrix-table .mesec-header { font-weight: bold; font-size: 12px; }
+        .celija { cursor: pointer; min-width: 30px; height: 24px; font-size: 11px; }
+        .zelena { background: #c8f7c5; }
+        .crvena { background: #ffcccc; }
+        .siva { background: #f5f5f5; }
+
         .sync-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
         .sync-online { background: #28a745; }
         .sync-offline { background: #dc3545; }
 
-        .jedinica-header { background: #667eea; color: white; padding: 12px; font-weight: bold; font-size: 16px; border-radius: 8px 8px 0 0; }
-        .placene-sekcija { padding: 10px; }
-        .neplacene-sekcija { padding: 10px; border-top: 1px solid #eee; }
-        .sumarni-pregled { background: #f8f9fa; border: 2px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 15px; display: flex; justify-content: space-around; text-align: center; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; padding: 25px; border-radius: 10px; max-width: 500px; width: 90%; max-height: 85vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .search-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px; font-size: 16px; }
+
+        .badge { padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; }
+        .badge-placeno { background: #d4edda; color: #155724; }
+        .badge-nije { background: #f8d7da; color: #721c24; }
 
         @media print {
-            @page { size: A4 portrait; margin: 8mm; }
+            @page { size: A4 landscape; margin: 6mm; }
             body { background: white !important; }
             .no-print { display: none !important; }
-            table { font-size: 11px !important; }
-            th, td { padding: 6px !important; }
+            .matrix-table { font-size: 9px !important; }
+            .matrix-table th, .matrix-table td { padding: 2px !important; }
         }
     </style>
 </head>
@@ -96,139 +89,74 @@
         <div class="container header-content">
             <h1>🏠 Smještaj <span id="syncDot" class="sync-indicator sync-offline" title="Sinhronizacija"></span></h1>
             <div>
-                <button onclick="exportData()" class="btn btn-info">📥 Export</button>
+                <button onclick="showAddJedinica()" class="btn btn-success">+ Jedinica</button>
+                <button onclick="showAddSoba()" class="btn btn-info">+ Soba</button>
                 <button onclick="showManager()" class="btn btn-warning">👨‍💼 Menadžer</button>
+                <button onclick="exportData()" class="btn btn-info">📥 Export</button>
                 <button onclick="resetAll()" class="btn btn-danger">🔄 Reset</button>
                 <button id="logoutBtn" class="btn btn-danger">Odjava</button>
             </div>
         </div>
     </header>
-    
+
     <div class="container">
-        <div id="mainContent"></div>
+        <div id="matrixContainer"></div>
     </div>
 </div>
 
-<!-- MODAL ZA DODAVANJE -->
-<div id="addModal" class="modal">
+<!-- MODAL ZA DODAVANJE JEDINICE -->
+<div id="addJedinicaModal" class="modal">
     <div class="modal-content">
-        <div class="modal-header">
-            <h3 id="addModalTitle"></h3>
-            <button onclick="closeModal('addModal')" style="font-size:24px;background:none;border:none;">&times;</button>
-        </div>
-        <input type="text" id="addInput" placeholder="Naziv" class="search-input">
-        <button onclick="saveNew()" class="btn btn-success" style="width:100%;">Sačuvaj</button>
+        <div class="modal-header"><h3>Dodaj jedinicu</h3><button onclick="closeModal('addJedinicaModal')" style="font-size:24px;background:none;border:none;">&times;</button></div>
+        <input type="text" id="newJedinicaName" placeholder="Naziv jedinice" class="search-input">
+        <button onclick="addJedinica()" class="btn btn-success" style="width:100%;">Sačuvaj</button>
     </div>
 </div>
 
-<!-- MODAL ZA PREIMENOVANJE -->
-<div id="renameModal" class="modal">
+<!-- MODAL ZA DODAVANJE SOBE -->
+<div id="addSobaModal" class="modal">
     <div class="modal-content">
-        <div class="modal-header">
-            <h3>Preimenuj</h3>
-            <button onclick="closeModal('renameModal')" style="font-size:24px;background:none;border:none;">&times;</button>
-        </div>
-        <input type="text" id="renameInput" placeholder="Novo ime" class="search-input">
-        <button onclick="saveRename()" class="btn btn-success" style="width:100%;">Sačuvaj</button>
+        <div class="modal-header"><h3>Dodaj sobu</h3><button onclick="closeModal('addSobaModal')" style="font-size:24px;background:none;border:none;">&times;</button></div>
+        <select id="selectJedinica" class="search-input"></select>
+        <input type="text" id="newSobaName" placeholder="Naziv sobe" class="search-input">
+        <button onclick="addSoba()" class="btn btn-success" style="width:100%;">Sačuvaj</button>
     </div>
 </div>
 
-<!-- MODAL ZA PLAĆANJE -->
+<!-- MODAL ZA PLAĆANJE/CENU -->
 <div id="payModal" class="modal">
     <div class="modal-content">
-        <div class="modal-header">
-            <h3>💰 Plaćanje</h3>
-            <button onclick="closeModal('payModal')" style="font-size:24px;background:none;border:none;">&times;</button>
-        </div>
-        <p id="paySobaInfo" style="margin-bottom:15px;font-size:16px;"></p>
-        <div style="margin-bottom:15px;">
-            <label style="display:block;margin-bottom:5px;font-weight:bold;">Mesec:</label>
-            <select id="payMesec" class="search-input">
-                <option value="1">Januar</option>
-                <option value="2">Februar</option>
-                <option value="3">Mart</option>
-                <option value="4">April</option>
-                <option value="5">Maj</option>
-                <option value="6">Jun</option>
-                <option value="7">Jul</option>
-                <option value="8">Avgust</option>
-                <option value="9">Septembar</option>
-                <option value="10">Oktobar</option>
-                <option value="11">Novembar</option>
-                <option value="12">Decembar</option>
-            </select>
-        </div>
-        <div style="margin-bottom:15px;">
-            <label style="display:block;margin-bottom:5px;font-weight:bold;">Godina:</label>
-            <select id="payGodina" class="search-input">
-                <option value="2024">2024</option>
-                <option value="2025">2025</option>
-                <option value="2026">2026</option>
-                <option value="2027">2027</option>
-                <option value="2028">2028</option>
-            </select>
-        </div>
-        <button onclick="confirmPay()" class="btn btn-success" style="width:100%;padding:12px;font-size:16px;">✅ Potvrdi plaćanje</button>
+        <div class="modal-header"><h3>💰 Plaćanje</h3><button onclick="closeModal('payModal')" style="font-size:24px;background:none;border:none;">&times;</button></div>
+        <p id="payInfo" style="margin-bottom:15px;font-size:15px;"></p>
+        <label style="font-weight:bold;">Iznos uplate (€):</label>
+        <input type="number" id="payIznos" class="search-input" placeholder="npr. 150" min="0" step="any">
+        <button onclick="confirmPay()" class="btn btn-success" style="width:100%;padding:12px;">✅ Potvrdi</button>
     </div>
 </div>
 
-<!-- MODAL ZA MENADŽER IZVEŠTAJ -->
+<!-- MODAL ZA MENADŽER -->
 <div id="managerModal" class="modal">
-    <div class="modal-content" style="max-width:600px;">
-        <div class="modal-header">
-            <h3>👨‍💼 Menadžer - Izveštaj</h3>
-            <button onclick="closeModal('managerModal')" style="font-size:24px;background:none;border:none;">&times;</button>
-        </div>
-        <div style="margin-bottom:15px;display:flex;gap:10px;flex-wrap:wrap;">
-            <div style="flex:1;min-width:150px;">
-                <label style="display:block;margin-bottom:5px;font-weight:bold;">Mesec:</label>
-                <select id="reportMesec" onchange="renderReport()" class="search-input">
-                    <option value="1">Januar</option>
-                    <option value="2">Februar</option>
-                    <option value="3">Mart</option>
-                    <option value="4">April</option>
-                    <option value="5">Maj</option>
-                    <option value="6">Jun</option>
-                    <option value="7">Jul</option>
-                    <option value="8">Avgust</option>
-                    <option value="9">Septembar</option>
-                    <option value="10">Oktobar</option>
-                    <option value="11">Novembar</option>
-                    <option value="12">Decembar</option>
-                </select>
-            </div>
-            <div style="flex:1;min-width:120px;">
-                <label style="display:block;margin-bottom:5px;font-weight:bold;">Godina:</label>
-                <select id="reportGodina" onchange="renderReport()" class="search-input">
-                    <option value="2024">2024</option>
-                    <option value="2025">2025</option>
-                    <option value="2026">2026</option>
-                    <option value="2027">2027</option>
-                    <option value="2028">2028</option>
-                </select>
-            </div>
-        </div>
-        <div id="reportContent"></div>
-        <button onclick="printReport()" class="btn btn-info" style="width:100%;margin-top:10px;">🖨️ Štampaj A4</button>
+    <div class="modal-content" style="max-width:800px;">
+        <div class="modal-header"><h3>👨‍💼 Menadžer - Finansijski izveštaj</h3><button onclick="closeModal('managerModal')" style="font-size:24px;background:none;border:none;">&times;</button></div>
+        <select id="reportGodina" onchange="renderManager()" class="search-input">
+            <option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option>
+        </select>
+        <div id="managerReport"></div>
+        <button onclick="printManager()" class="btn btn-info" style="width:100%;margin-top:10px;">🖨️ Štampaj A4</button>
     </div>
 </div>
 
 <script>
-// ==================== SUPABASE ====================
+// ==================== KONFIGURACIJA ====================
 const SUPABASE_URL = 'https://itoyvqqssqmeyxawvulq.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_nbUWlCIXbB48NoBRhH4ucg_PfCAmau1';
+const GOOGLE_DRIVE_URL = 'OVDE_ZALEPI_SVOJ_APPS_SCRIPT_URL';
+
 let supabaseClient = null;
 try { supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) {}
 
-// ==================== PODACI ====================
 let data = { jedinice: [] };
-let currentJedinica = null;
-let currentSoba = null;
-let renamingType = null;
-let renamingJedinica = null;
-let renamingSoba = null;
-let payingSoba = null;
-let addingType = null;
+let selectedCell = null; // { jedinicaIdx, sobaIdx, mesec }
 
 function updateSyncStatus(online) {
     const dot = document.getElementById('syncDot');
@@ -239,32 +167,22 @@ async function loadFromCloud() {
     if (!supabaseClient) { loadLocal(); updateSyncStatus(false); return; }
     try {
         const { data: result, error } = await supabaseClient.from('smjestaj_data').select('*').eq('id', 1).single();
-        if (result) {
-            data = result.podaci || { jedinice: [] };
-            updateSyncStatus(true);
-        } else if (error) {
-            await supabaseClient.from('smjestaj_data').upsert({ id: 1, podaci: { jedinice: [] } });
-            updateSyncStatus(true);
-        }
+        if (result) { data = result.podaci || { jedinice: [] }; updateSyncStatus(true); }
+        else if (error) { await supabaseClient.from('smjestaj_data').upsert({ id: 1, podaci: { jedinice: [] } }); updateSyncStatus(true); }
     } catch(e) { loadLocal(); updateSyncStatus(false); }
 }
 
 async function saveToCloud() {
     saveLocal();
+    if (GOOGLE_DRIVE_URL && !GOOGLE_DRIVE_URL.includes('OVDE_ZALEPI')) {
+        try { await fetch(GOOGLE_DRIVE_URL, { method: 'POST', body: JSON.stringify(data), headers: {'Content-Type':'application/json'} }); } catch(e) {}
+    }
     if (!supabaseClient) return;
     try { await supabaseClient.from('smjestaj_data').upsert({ id: 1, podaci: data }); updateSyncStatus(true); } catch(e) { updateSyncStatus(false); }
 }
 
-function loadLocal() {
-    const saved = localStorage.getItem('smjestaj_data');
-    if (saved) {
-        data = JSON.parse(saved);
-    }
-}
-
-function saveLocal() {
-    localStorage.setItem('smjestaj_data', JSON.stringify(data));
-}
+function loadLocal() { const saved = localStorage.getItem('smjestaj_data'); if (saved) data = JSON.parse(saved); }
+function saveLocal() { localStorage.setItem('smjestaj_data', JSON.stringify(data)); }
 
 // ==================== LOGIN ====================
 document.getElementById('loginBtn').onclick = async () => {
@@ -272,405 +190,170 @@ document.getElementById('loginBtn').onclick = async () => {
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('appContent').style.display = 'block';
         await loadFromCloud();
-        renderJedinice();
+        renderMatrix();
     }
 };
-
 document.getElementById('logoutBtn').onclick = () => {
     document.getElementById('appContent').style.display = 'none';
     document.getElementById('loginScreen').style.display = 'flex';
 };
 
-// ==================== RENDER ====================
-function renderJedinice() {
-    currentJedinica = null;
-    currentSoba = null;
-    const c = document.getElementById('mainContent');
-    c.innerHTML = `
-        <h2 style="margin-bottom:15px;">🏢 Jedinice</h2>
-        ${data.jedinice.length === 0 ? '<p style="color:#999;">Nema jedinica. Kliknite "+ Dodaj jedinicu".</p>' : ''}
-        ${data.jedinice.map((jedinica, ji) => `
-            <div class="card" onclick="openSobe(${ji})">
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <h3 style="font-size:18px;">🏢 ${jedinica.ime}</h3>
-                    <span style="font-size:12px;color:#666;">${jedinica.sobe ? jedinica.sobe.length : 0} soba</span>
-                </div>
-            </div>
-        `).join('')}
-        <button class="btn btn-success" onclick="showAddModal('jedinica')" style="width:100%;margin-top:15px;padding:15px;font-size:16px;">+ Dodaj jedinicu</button>
-    `;
-    
-    c.querySelectorAll('.card').forEach((card, index) => {
-        let longPressTimer;
-        card.ontouchstart = (e) => {
-            longPressTimer = setTimeout(() => {
-                e.preventDefault();
-                showRenameModal('jedinica', index);
-            }, 500);
-        };
-        card.ontouchend = () => { if (longPressTimer) clearTimeout(longPressTimer); };
-        card.oncontextmenu = (e) => { e.preventDefault(); showRenameModal('jedinica', index); };
+// ==================== MATRIX RENDER ====================
+function renderMatrix() {
+    const c = document.getElementById('matrixContainer');
+    let html = '<table class="matrix-table"><thead><tr><th style="min-width:150px;">OBJEKAT / SOBA</th>';
+    for (let m = 1; m <= 12; m++) { html += `<th class="mesec-header">${getMesecIme(m).substring(0,3)}</th>`; }
+    html += '</tr></thead><tbody>';
+
+    data.jedinice.forEach((jedinica, ji) => {
+        html += `<tr><td class="objekat-naziv" colspan="13">🏢 ${jedinica.ime}</td></tr>`;
+        jedinica.sobe.forEach((soba, si) => {
+            html += `<tr><td class="soba-naziv">🚪 ${soba.ime}</td>`;
+            for (let m = 1; m <= 12; m++) {
+                const placeno = soba.placenoMesec === m && soba.placenoGodina === new Date().getFullYear();
+                const klasa = placeno ? 'zelena' : 'crvena';
+                html += `<td class="celija ${klasa}" onclick="openPay(${ji},${si},${m})" title="${getMesecIme(m)} ${new Date().getFullYear()}">${placeno ? '✅' : ''}</td>`;
+            }
+            html += '</tr>';
+        });
     });
-}
 
-function openSobe(jedinicaIndex) {
-    currentJedinica = jedinicaIndex;
-    currentSoba = null;
-    const jedinica = data.jedinice[jedinicaIndex];
-    if (!jedinica.sobe) jedinica.sobe = [];
-    
-    const c = document.getElementById('mainContent');
-    c.innerHTML = `
-        <button class="btn btn-info btn-sm" onclick="renderJedinice()" style="margin-bottom:15px;">↩ Nazad</button>
-        <h2 style="margin-bottom:15px;">🏢 ${jedinica.ime}</h2>
-        ${jedinica.sobe.length === 0 ? '<p style="color:#999;">Nema soba. Kliknite "+ Dodaj sobu".</p>' : ''}
-        ${jedinica.sobe.map((soba, si) => {
-            const isPlaceno = soba.placenoMesec === new Date().getMonth()+1 && soba.placenoGodina === new Date().getFullYear();
-            const klasa = isPlaceno ? 'soba-zelena' : 'soba-crvena';
-            const brojRadnika = soba.radnici ? soba.radnici.length : 0;
-            return `
-                <div class="card ${klasa}">
-                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;" onclick="openSobaDetalji(${si})">
-                        <div>
-                            <h3 style="font-size:18px;">🚪 Soba ${soba.ime}</h3>
-                            <span style="font-size:12px;color:#666;">👤 ${brojRadnika} radnika</span>
-                        </div>
-                        <span class="badge ${isPlaceno ? 'badge-placeno' : 'badge-nije'}">
-                            ${isPlaceno ? '✅ Plaćeno' : '❌ Nije plaćeno'}
-                        </span>
-                    </div>
-                    <div style="display:flex;gap:5px;margin-top:10px;">
-                        <button class="btn btn-success btn-sm" onclick="event.stopPropagation(); openPayModal(${si});" style="flex:1;">💰 Plati</button>
-                        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); obrisiSobu(${si});">🗑</button>
-                    </div>
-                </div>
-            `;
-        }).join('')}
-        <button class="btn btn-success" onclick="showAddModal('soba')" style="width:100%;margin-top:15px;padding:15px;font-size:16px;">+ Dodaj sobu</button>
-    `;
-    
-    c.querySelectorAll('.card').forEach((card, index) => {
-        let longPressTimer;
-        card.ontouchstart = (e) => {
-            longPressTimer = setTimeout(() => {
-                e.preventDefault();
-                showRenameModal('soba', index);
-            }, 500);
-        };
-        card.ontouchend = () => { if (longPressTimer) clearTimeout(longPressTimer); };
-        card.oncontextmenu = (e) => { e.preventDefault(); showRenameModal('soba', index); };
-    });
-}
-
-function openSobaDetalji(sobaIndex) {
-    currentSoba = sobaIndex;
-    const jedinica = data.jedinice[currentJedinica];
-    const soba = jedinica.sobe[sobaIndex];
-    
-    if (!soba.radnici) soba.radnici = [];
-    
-    const c = document.getElementById('mainContent');
-    c.innerHTML = `
-        <button class="btn btn-info btn-sm" onclick="openSobe(${currentJedinica})" style="margin-bottom:15px;">↩ Nazad na sobe</button>
-        <h2 style="margin-bottom:5px;">🚪 Soba ${soba.ime}</h2>
-        <p style="color:#666;margin-bottom:15px;">🏢 ${jedinica.ime}</p>
-        
-        ${soba.radnici.length === 0 ? '<p style="color:#999;">Nema radnika u sobi. Kliknite "+ Dodaj radnika".</p>' : ''}
-        
-        ${soba.radnici.map((radnik, ri) => `
-            <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
-                <span style="font-size:18px;">👤 ${radnik}</span>
-                <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); obrisiRadnika(${ri})">✕</button>
-            </div>
-        `).join('')}
-        
-        <button class="btn btn-success" onclick="dodajRadnika()" style="width:100%;margin-top:15px;padding:15px;font-size:16px;">+ Dodaj radnika</button>
-    `;
-    
-    c.querySelectorAll('.card').forEach((card, index) => {
-        let longPressTimer;
-        card.ontouchstart = (e) => {
-            longPressTimer = setTimeout(() => {
-                e.preventDefault();
-                preimenujRadnika(index);
-            }, 500);
-        };
-        card.ontouchend = () => { if (longPressTimer) clearTimeout(longPressTimer); };
-        card.oncontextmenu = (e) => { e.preventDefault(); preimenujRadnika(index); };
-    });
-}
-
-// ==================== DODAVANJE ====================
-function showAddModal(type) {
-    addingType = type;
-    document.getElementById('addModalTitle').textContent = type === 'jedinica' ? 'Dodaj jedinicu' : 'Dodaj sobu';
-    document.getElementById('addInput').value = '';
-    showModal('addModal');
-}
-
-function saveNew() {
-    const name = document.getElementById('addInput').value.trim();
-    if (!name) return;
-    
-    if (addingType === 'jedinica') {
-        data.jedinice.push({ ime: name, sobe: [] });
-        saveToCloud();
-        closeModal('addModal');
-        renderJedinice();
-    } else if (addingType === 'soba' && currentJedinica !== null) {
-        data.jedinice[currentJedinica].sobe.push({ ime: name, radnici: [], placenoMesec: null, placenoGodina: null, placenoDatum: null });
-        saveToCloud();
-        closeModal('addModal');
-        openSobe(currentJedinica);
-    }
-}
-
-// ==================== RADNICI ====================
-function dodajRadnika() {
-    const ime = prompt('Unesite ime radnika:');
-    if (ime && ime.trim()) {
-        data.jedinice[currentJedinica].sobe[currentSoba].radnici.push(ime.trim());
-        saveToCloud();
-        openSobaDetalji(currentSoba);
-    }
-}
-
-function obrisiRadnika(radnikIndex) {
-    if (confirm('Obrisati radnika?')) {
-        data.jedinice[currentJedinica].sobe[currentSoba].radnici.splice(radnikIndex, 1);
-        saveToCloud();
-        openSobaDetalji(currentSoba);
-    }
-}
-
-function preimenujRadnika(radnikIndex) {
-    const staroIme = data.jedinice[currentJedinica].sobe[currentSoba].radnici[radnikIndex];
-    const novoIme = prompt('Novo ime radnika:', staroIme);
-    if (novoIme && novoIme.trim()) {
-        data.jedinice[currentJedinica].sobe[currentSoba].radnici[radnikIndex] = novoIme.trim();
-        saveToCloud();
-        openSobaDetalji(currentSoba);
-    }
-}
-
-// ==================== SOBE ====================
-function obrisiSobu(sobaIndex) {
-    if (confirm('Obrisati sobu i sve radnike u njoj?')) {
-        data.jedinice[currentJedinica].sobe.splice(sobaIndex, 1);
-        saveToCloud();
-        openSobe(currentJedinica);
-    }
-}
-
-// ==================== PREIMENOVANJE ====================
-function showRenameModal(type, index) {
-    renamingType = type;
-    if (type === 'jedinica') {
-        renamingJedinica = index;
-        document.getElementById('renameInput').value = data.jedinice[index].ime;
-    } else if (type === 'soba') {
-        renamingSoba = index;
-        document.getElementById('renameInput').value = data.jedinice[currentJedinica].sobe[index].ime;
-    }
-    showModal('renameModal');
-}
-
-function saveRename() {
-    const name = document.getElementById('renameInput').value.trim();
-    if (!name) return;
-    
-    if (renamingType === 'jedinica') {
-        data.jedinice[renamingJedinica].ime = name;
-        saveToCloud();
-        closeModal('renameModal');
-        renderJedinice();
-    } else if (renamingType === 'soba') {
-        data.jedinice[currentJedinica].sobe[renamingSoba].ime = name;
-        saveToCloud();
-        closeModal('renameModal');
-        openSobe(currentJedinica);
-    }
+    html += '</tbody></table>';
+    c.innerHTML = html;
 }
 
 // ==================== PLAĆANJE ====================
-function openPayModal(sobaIndex) {
-    payingSoba = sobaIndex;
-    const soba = data.jedinice[currentJedinica].sobe[sobaIndex];
-    document.getElementById('paySobaInfo').textContent = `Soba ${soba.ime} - ${data.jedinice[currentJedinica].ime}`;
-    
-    const now = new Date();
-    document.getElementById('payMesec').value = now.getMonth()+1;
-    document.getElementById('payGodina').value = now.getFullYear();
-    
+function openPay(ji, si, mesec) {
+    selectedCell = { ji, si, mesec };
+    const jedinica = data.jedinice[ji];
+    const soba = jedinica.sobe[si];
+    document.getElementById('payInfo').textContent = `${jedinica.ime} - Soba ${soba.ime} - ${getMesecIme(mesec)}`;
+    document.getElementById('payIznos').value = soba.cenaMesec && soba.cenaMesec[mesec] ? soba.cenaMesec[mesec] : '';
     showModal('payModal');
 }
 
 function confirmPay() {
-    if (payingSoba === null) return;
-    
-    const mesec = parseInt(document.getElementById('payMesec').value);
-    const godina = parseInt(document.getElementById('payGodina').value);
-    
-    data.jedinice[currentJedinica].sobe[payingSoba].placenoMesec = mesec;
-    data.jedinice[currentJedinica].sobe[payingSoba].placenoGodina = godina;
-    data.jedinice[currentJedinica].sobe[payingSoba].placenoDatum = new Date().toLocaleString('hr');
-    
+    if (!selectedCell) return;
+    const { ji, si, mesec } = selectedCell;
+    const iznos = parseFloat(document.getElementById('payIznos').value) || 0;
+    const soba = data.jedinice[ji].sobe[si];
+    soba.placenoMesec = mesec;
+    soba.placenoGodina = new Date().getFullYear();
+    if (!soba.cenaMesec) soba.cenaMesec = {};
+    soba.cenaMesec[mesec] = iznos;
     saveToCloud();
     closeModal('payModal');
-    openSobe(currentJedinica);
+    renderMatrix();
+}
+
+// ==================== DODAVANJE ====================
+function showAddJedinica() { document.getElementById('newJedinicaName').value = ''; showModal('addJedinicaModal'); }
+function showAddSoba() {
+    const select = document.getElementById('selectJedinica');
+    select.innerHTML = data.jedinice.map((j, i) => `<option value="${i}">${j.ime}</option>`).join('');
+    document.getElementById('newSobaName').value = '';
+    showModal('addSobaModal');
+}
+
+function addJedinica() {
+    const name = document.getElementById('newJedinicaName').value.trim();
+    if (!name) return;
+    data.jedinice.push({ ime: name, sobe: [] });
+    saveToCloud(); closeModal('addJedinicaModal'); renderMatrix();
+}
+
+function addSoba() {
+    const ji = parseInt(document.getElementById('selectJedinica').value);
+    const name = document.getElementById('newSobaName').value.trim();
+    if (!name) return;
+    data.jedinice[ji].sobe.push({ ime: name, placenoMesec: null, placenoGodina: null, cenaMesec: {} });
+    saveToCloud(); closeModal('addSobaModal'); renderMatrix();
 }
 
 // ==================== MENADŽER ====================
 function showManager() {
-    const now = new Date();
-    document.getElementById('reportMesec').value = now.getMonth()+1;
-    document.getElementById('reportGodina').value = now.getFullYear();
-    renderReport();
+    document.getElementById('reportGodina').value = new Date().getFullYear();
+    renderManager();
     showModal('managerModal');
 }
 
-function renderReport() {
-    const mesec = parseInt(document.getElementById('reportMesec').value);
+function renderManager() {
     const godina = parseInt(document.getElementById('reportGodina').value);
-    const c = document.getElementById('reportContent');
-    
-    let ukupnoSoba = 0;
-    let placenih = 0;
-    let neplacenih = 0;
-    
-    let html = `<h4 style="margin-bottom:15px;text-align:center;font-size:18px;">📊 IZVEŠTAJ - ${getMesecIme(mesec).toUpperCase()} ${godina}</h4>`;
-    
-    if (data.jedinice.length === 0) {
-        html += '<p style="color:#999;text-align:center;">Nema podataka.</p>';
-        c.innerHTML = html;
-        return;
-    }
-    
+    const c = document.getElementById('managerReport');
+    let html = `<h4 style="margin-bottom:15px;">📊 FINANSIJSKI IZVEŠTAJ - ${godina}</h4>`;
+    let ukupno = 0;
+
     data.jedinice.forEach(jedinica => {
-        const sobe = jedinica.sobe || [];
-        const placeneSobe = sobe.filter(s => s.placenoMesec === mesec && s.placenoGodina === godina);
-        const neplaceneSobe = sobe.filter(s => !(s.placenoMesec === mesec && s.placenoGodina === godina));
+        let jedinicaUkupno = 0;
+        html += `<div style="background:#f8f9fa;border:1px solid #ddd;border-radius:5px;padding:10px;margin-bottom:10px;">`;
+        html += `<strong style="font-size:15px;">🏢 ${jedinica.ime}</strong><br>`;
         
-        ukupnoSoba += sobe.length;
-        placenih += placeneSobe.length;
-        neplacenih += neplaceneSobe.length;
-        
-        html += `
-            <div style="background:white;border:2px solid #ddd;border-radius:8px;margin-bottom:15px;overflow:hidden;">
-                <div class="jedinica-header">
-                    🏢 ${jedinica.ime}
-                    <span style="float:right;font-size:13px;">${sobe.length} soba</span>
-                </div>
-                
-                ${placeneSobe.length > 0 ? `
-                    <div class="placene-sekcija">
-                        <div style="font-weight:bold;color:#28a745;margin-bottom:8px;">✅ PLAĆENE (${placeneSobe.length}):</div>
-                        ${placeneSobe.map(soba => {
-                            const brojRadnika = soba.radnici ? soba.radnici.length : 0;
-                            return `<div style="padding:5px 10px;border-left:3px solid #28a745;margin-bottom:3px;font-size:14px;">
-                                🚪 Soba ${soba.ime} (👤${brojRadnika}) 
-                                ${soba.placenoDatum ? `<span style="font-size:11px;color:#666;">- ${soba.placenoDatum}</span>` : ''}
-                            </div>`;
-                        }).join('')}
-                    </div>
-                ` : ''}
-                
-                ${neplaceneSobe.length > 0 ? `
-                    <div class="neplacene-sekcija">
-                        <div style="font-weight:bold;color:#dc3545;margin-bottom:8px;">❌ NEPLAĆENE (${neplaceneSobe.length}):</div>
-                        ${neplaceneSobe.map(soba => {
-                            const brojRadnika = soba.radnici ? soba.radnici.length : 0;
-                            return `<div style="padding:5px 10px;border-left:3px solid #dc3545;margin-bottom:3px;font-size:14px;">
-                                🚪 Soba ${soba.ime} (👤${brojRadnika})
-                            </div>`;
-                        }).join('')}
-                    </div>
-                ` : ''}
-            </div>
-        `;
+        jedinica.sobe.forEach(soba => {
+            let sobaUkupno = 0;
+            for (let m = 1; m <= 12; m++) {
+                const cena = soba.cenaMesec && soba.cenaMesec[m] ? soba.cenaMesec[m] : 0;
+                sobaUkupno += cena;
+            }
+            jedinicaUkupno += sobaUkupno;
+            ukupno += sobaUkupno;
+            html += `<div style="margin-left:20px;margin-top:5px;display:flex;justify-content:space-between;">
+                <span>🚪 Soba ${soba.ime}</span>
+                <span><strong>${sobaUkupno.toFixed(2)} €</strong></span>
+            </div>`;
+            // Prikaži po mesecima
+            for (let m = 1; m <= 12; m++) {
+                const cena = soba.cenaMesec && soba.cenaMesec[m] ? soba.cenaMesec[m] : null;
+                if (cena) {
+                    html += `<div style="margin-left:40px;font-size:12px;color:#666;">${getMesecIme(m).substring(0,3)}: ${cena.toFixed(2)} €</div>`;
+                }
+            }
+        });
+        html += `<div style="margin-top:5px;border-top:1px solid #ddd;padding-top:5px;text-align:right;"><strong>Jedinica: ${jedinicaUkupno.toFixed(2)} €</strong></div>`;
+        html += `</div>`;
     });
-    
-    // ZBIRNI PREGLED NA VRHU
-    html = `
-        <div class="sumarni-pregled">
-            <div>
-                <div style="font-size:22px;font-weight:bold;">${ukupnoSoba}</div>
-                <div style="font-size:12px;color:#666;">UKUPNO SOBA</div>
-            </div>
-            <div style="border-left:1px solid #ddd;"></div>
-            <div>
-                <div style="font-size:22px;font-weight:bold;color:#28a745;">${placenih}</div>
-                <div style="font-size:12px;color:#28a745;font-weight:bold;">PLAĆENO</div>
-            </div>
-            <div style="border-left:1px solid #ddd;"></div>
-            <div>
-                <div style="font-size:22px;font-weight:bold;color:#dc3545;">${neplacenih}</div>
-                <div style="font-size:12px;color:#dc3545;font-weight:bold;">NIJE PLAĆENO</div>
-            </div>
-        </div>
-    ` + html;
-    
+
+    html += `<div style="background:#667eea;color:white;padding:15px;border-radius:5px;text-align:center;font-size:18px;"><strong>UKUPNO: ${ukupno.toFixed(2)} €</strong></div>`;
     c.innerHTML = html;
 }
 
-function getMesecIme(mesec) {
-    const meseci = ['Januar','Februar','Mart','April','Maj','Jun','Jul','Avgust','Septembar','Oktobar','Novembar','Decembar'];
-    return meseci[mesec-1];
-}
-
-function printReport() {
-    const mesec = parseInt(document.getElementById('reportMesec').value);
-    const godina = parseInt(document.getElementById('reportGodina').value);
-    
-    let printContent = `<h2 style="text-align:center;">SMJEŠTAJ - Izveštaj</h2>
-        <p style="text-align:center;">${getMesecIme(mesec)} ${godina}</p>
-        <hr>`;
-    
+function printManager() {
+    const godina = document.getElementById('reportGodina').value;
+    let printContent = `<h2 style="text-align:center;">FINANSIJSKI IZVEŠTAJ - ${godina}</h2><hr>`;
+    let ukupno = 0;
     data.jedinice.forEach(jedinica => {
-        const placeneSobe = jedinica.sobe.filter(s => s.placenoMesec === mesec && s.placenoGodina === godina);
-        const neplaceneSobe = jedinica.sobe.filter(s => !(s.placenoMesec === mesec && s.placenoGodina === godina));
-        
-        printContent += `<div style="margin-bottom:15px;border:1px solid #ddd;padding:10px;">
-            <strong>🏢 ${jedinica.ime}</strong><br>`;
-        
-        if (placeneSobe.length > 0) {
-            printContent += `<div style="margin-top:5px;color:#28a745;"><strong>✅ Plaćene:</strong></div>`;
-            placeneSobe.forEach(soba => {
-                printContent += `<div style="margin-left:15px;">🚪 Soba ${soba.ime}</div>`;
-            });
-        }
-        
-        if (neplaceneSobe.length > 0) {
-            printContent += `<div style="margin-top:5px;color:#dc3545;"><strong>❌ Neplaćene:</strong></div>`;
-            neplaceneSobe.forEach(soba => {
-                printContent += `<div style="margin-left:15px;">🚪 Soba ${soba.ime}</div>`;
-            });
-        }
-        
-        printContent += '</div>';
+        let jedinicaUkupno = 0;
+        printContent += `<div style="margin-bottom:15px;border:1px solid #ddd;padding:10px;"><strong>🏢 ${jedinica.ime}</strong><br>`;
+        jedinica.sobe.forEach(soba => {
+            let sobaUkupno = 0;
+            for (let m = 1; m <= 12; m++) { sobaUkupno += (soba.cenaMesec && soba.cenaMesec[m]) ? soba.cenaMesec[m] : 0; }
+            jedinicaUkupno += sobaUkupno;
+            printContent += `<div style="margin-left:20px;display:flex;justify-content:space-between;"><span>🚪 Soba ${soba.ime}</span><span><strong>${sobaUkupno.toFixed(2)} €</strong></span></div>`;
+        });
+        ukupno += jedinicaUkupno;
+        printContent += `<div style="text-align:right;"><strong>Jedinica: ${jedinicaUkupno.toFixed(2)} €</strong></div></div>`;
     });
-    
+    printContent += `<div style="text-align:center;font-size:16px;"><strong>UKUPNO: ${ukupno.toFixed(2)} €</strong></div>`;
     const win = window.open('', '_blank');
-    win.document.write(`<html><head><title>Smještaj - Izveštaj</title>
-        <style>body{font-family:Arial,sans-serif;padding:20px;font-size:12px;}</style></head>
-        <body>${printContent}</body></html>`);
+    win.document.write(`<html><head><title>Finansijski izveštaj</title><style>body{font-family:Arial,sans-serif;padding:20px;font-size:12px;}</style></head><body>${printContent}</body></html>`);
     win.document.close();
     win.print();
 }
 
 // ==================== HELPERS ====================
+function getMesecIme(mesec) {
+    const meseci = ['Januar','Februar','Mart','April','Maj','Jun','Jul','Avgust','Septembar','Oktobar','Novembar','Decembar'];
+    return meseci[mesec-1];
+}
+
 function showModal(id) { document.getElementById(id).classList.add('active'); }
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
 function exportData() {
-    const exportObj = JSON.stringify(data, null, 2);
-    const blob = new Blob([exportObj], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = `smjestaj_backup_${new Date().toISOString().slice(0,10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    a.href = url; a.download = `smjestaj_backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click(); URL.revokeObjectURL(url);
 }
 
 async function resetAll() {
@@ -679,20 +362,12 @@ async function resetAll() {
         if (confirm('⚠️ Resetovati SVE podatke?')) {
             localStorage.removeItem('smjestaj_data');
             data = { jedinice: [] };
-            await saveToCloud();
-            renderJedinice();
-            alert('✅ Resetovano!');
+            await saveToCloud(); renderMatrix(); alert('✅ Resetovano!');
         }
-    } else if (sifra !== null) {
-        alert('❌ Pogrešna šifra!');
-    }
+    } else if (sifra !== null) { alert('❌ Pogrešna šifra!'); }
 }
 
-window.onclick = function(event) {
-    if (event.target.classList.contains('modal')) {
-        event.target.classList.remove('active');
-    }
-};
+window.onclick = function(event) { if (event.target.classList.contains('modal')) event.target.classList.remove('active'); };
 </script>
 </body>
 </html>
