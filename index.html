@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smještaj ☁️</title>
+    <meta name="theme-color" content="#667eea">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; padding: 15px; }
+        
+        .login-container { display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .login-box { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; width: 90%; max-width: 400px; }
+        .login-icon { font-size: 4rem; margin-bottom: 20px; }
+        .password-input { margin: 20px 0; }
+        .password-input input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; }
+        .login-btn { background: #667eea; color: white; border: none; padding: 12px 30px; border-radius: 5px; font-size: 16px; cursor: pointer; width: 100%; }
+        
+        header { background: white; padding: 15px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; margin: 2px; color: white; font-weight: bold; white-space: nowrap; }
+        .btn-success { background: #28a745; }
+        .btn-info { background: #17a2b8; }
+        .btn-danger { background: #dc3545; }
+        .btn-warning { background: #ffc107; color: black; }
+        .btn-sm { padding: 5px 12px; font-size: 13px; }
+        
+        .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 1px 5px rgba(0,0,0,0.1); cursor: pointer; }
+        .card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+        
+        .soba-zelena { border-left: 5px solid #28a745; }
+        .soba-crvena { border-left: 5px solid #dc3545; }
+        
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; padding: 25px; border-radius: 10px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        
+        .search-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; font-weight: bold; }
+        
+        .badge { padding: 4px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; display: inline-block; }
+        .badge-placeno { background: #d4edda; color: #155724; }
+        .badge-nije { background: #f8d7da; color: #721c24; }
+        
+        .sync-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+        .sync-online { background: #28a745; }
+        .sync-offline { background: #dc3545; }
+
+        @media print {
+            @page { size: A4 portrait; margin: 8mm; }
+            body { background: white !important; }
+            .no-print { display: none !important; }
+            table { font-size: 11px !important; }
+            th, td { padding: 6px !important; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="login-container">
+    <div class="login-box">
+        <div class="login-icon">🏠</div>
+        <h1>Smještaj</h1>
+        <p>Unesite šifru</p>
+        <div class="password-input"><input type="password" id="passwordInput" placeholder="Šifra" autocomplete="off" value="123"></div>
+        <button id="loginBtn" class="login-btn">Pristupi</button>
+        <div style="margin-top:15px;color:#666;">Šifra: <strong>123</strong></div>
+    </div>
+</div>
+
+<!-- APLIKACIJA -->
+<div id="appContent" style="display:none;">
+    <header class="no-print">
+        <div class="container header-content">
+            <h1>🏠 Smještaj <span id="syncDot" class="sync-indicator sync-offline" title="Sinhronizacija"></span></h1>
+            <div>
+                <button onclick="exportData()" class="btn btn-info">📥 Export</button>
+                <button onclick="showManager()" class="btn btn-warning">👨‍💼 Menadžer</button>
+                <button onclick="resetAll()" class="btn btn-danger">🔄 Reset</button>
+                <button id="logoutBtn" class="btn btn-danger">Odjava</button>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div id="mainContent"></div>
+    </div>
+</div>
+
+<!-- MODAL ZA DODAVANJE -->
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="addModalTitle"></h3>
+            <button onclick="closeModal('addModal')" style="font-size:24px;background:none;border:none;">&times;</button>
+        </div>
+        <input type="text" id="addInput" placeholder="Naziv" class="search-input">
+        <button onclick="saveNew()" class="btn btn-success">Sačuvaj</button>
+    </div>
+</div>
+
+<!-- MODAL ZA PREIMENOVANJE -->
+<div id="renameModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Preimenuj</h3>
+            <button onclick="closeModal('renameModal')" style="font-size:24px;background:none;border:none;">&times;</button>
+        </div>
+        <input type="text" id="renameInput" placeholder="Novo ime" class="search-input">
+        <button onclick="saveRename()" class="btn btn-success">Sačuvaj</button>
+    </div>
+</div>
+
+<!-- MODAL ZA PLAĆANJE -->
+<div id="payModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>💰 Plaćanje</h3>
+            <button onclick="closeModal('payModal')" style="font-size:24px;background:none;border:none;">&times;</button>
+        </div>
+        <p id="paySobaInfo" style="margin-bottom:15px;"></p>
+        <div class="form-group">
+            <label>Mesec:</label>
+            <select id="payMesec" class="search-input">
+                <option value="1">Januar</option>
+                <option value="2">Februar</option>
+                <option value="3">Mart</option>
+                <option value="4">April</option>
+                <option value="5">Maj</option>
+                <option value="6">Jun</option>
+                <option value="7">Jul</option>
+                <option value="8">Avgust</option>
+                <option value="9">Septembar</option>
+                <option value="10">Oktobar</option>
+                <option value="11">Novembar</option>
+                <option value="12">Decembar</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Godina:</label>
+            <select id="payGodina" class="search-input">
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+                <option value="2026">2026</option>
+                <option value="2027">2027</option>
+            </select>
+        </div>
+        <button onclick="confirmPay()" class="btn btn-success" style="width:100%;margin-top:10px;">✅ Potvrdi plaćanje</button>
+    </div>
+</div>
+
+<!-- MODAL ZA MENADŽER IZVEŠTAJ -->
+<div id="managerModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>👨‍💼 Menadžer - Izveštaj</h3>
+            <button onclick="closeModal('managerModal')" style="font-size:24px;background:none;border:none;">&times;</button>
+        </div>
+        <div style="margin-bottom:15px;">
+            <label>Izaberite mesec:</label>
+            <select id="reportMesec" onchange="renderReport()" class="search-input">
+                <option value="1">Januar</option>
+                <option value="2">Februar</option>
+                <option value="3">Mart</option>
+                <option value="4">April</option>
+                <option value="5">Maj</option>
+                <option value="6">Jun</option>
+                <option value="7">Jul</option>
+                <option value="8">Avgust</option>
+                <option value="9">Septembar</option>
+                <option value="10">Oktobar</option>
+                <option value="11">Novembar</option>
+                <option value="12">Decembar</option>
+            </select>
+            <select id="reportGodina" onchange="renderReport()" class="search-input">
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+                <option value="2026">2026</option>
+                <option value="2027">2027</option>
+            </select>
+        </div>
+        <div id="reportContent"></div>
+        <button onclick="printReport()" class="btn btn-info" style="width:100%;margin-top:10px;">🖨️ Štampaj A4</button>
+    </div>
+</div>
+
+<script>
+// ==================== SUPABASE ====================
+const SUPABASE_URL = 'https://itoyvqqssqmeyxawvulq.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_nbUWlCIXbB48NoBRhH4ucg_PfCAmau1';
+let supabaseClient = null;
+try { supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) {}
+
+// ==================== PODACI ====================
+let data = { jedinice: [] };
+let currentJedinica = null;
+let currentSoba = null;
+let renamingType = null;
+let renamingJedinica = null;
+let renamingSoba = null;
+let payingSoba = null;
+
+function updateSyncStatus(online) {
+    const dot = document.getElementById('syncDot');
+    if (dot) { dot.className = 'sync-indicator ' + (online ? 'sync-online' : 'sync-offline'); dot.title = online ? '☁️ Sinhronizovano' : '📱 Lokalno'; }
+}
+
+async function loadFromCloud() {
+    if (!supabaseClient) { loadLocal(); updateSyncStatus(false); return; }
+    try {
+        const { data: result, error } = await supabaseClient.from('smjestaj_data').select('*').eq('id', 1).single();
+        if (result) {
+            data = result.podaci || { jedinice: [] };
+            updateSyncStatus(true);
+        } else if (error) {
+            await supabaseClient.from('smjestaj_data').upsert({ id: 1, podaci: { jedinice: [] } });
+            updateSyncStatus(true);
+        }
+    } catch(e) { loadLocal(); updateSyncStatus(false); }
+}
+
+async function saveToCloud() {
+    saveLocal();
+    if (!supabaseClient) return;
+    try { await supabaseClient.from('smjestaj_data').upsert({ id: 1, podaci: data }); updateSyncStatus(true); } catch(e) { updateSyncStatus(false); }
+}
+
+function loadLocal() {
+    const saved = localStorage.getItem('smjestaj_data');
+    if (saved) {
+        data = JSON.parse(saved);
+    }
+}
+
+function saveLocal() {
+    localStorage.setItem('smjestaj_data', JSON.stringify(data));
+}
+
+// ==================== LOGIN ====================
+document.getElementById('loginBtn').onclick = async () => {
+    if (document.getElementById('passwordInput').value === '123') {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appContent').style.display = 'block';
+        await loadFromCloud();
+        renderJedinice();
+    }
+};
+
+document.getElementById('logoutBtn').onclick = () => {
+    document.getElementById('appContent').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+};
+
+// ==================== RENDER ====================
+function renderJedinice() {
+    const c = document.getElementById('mainContent');
+    c.innerHTML = `
+        <h2 style="margin-bottom:15px;">🏢 Jedinice</h2>
+        ${data.jedinice.length === 0 ? '<p style="color:#999;">Nema jedinica. Kliknite "+ Dodaj jedinicu".</p>' : ''}
+        ${data.jedinice.map((jedinica, ji) => `
+            <div class="card" onclick="openSobe(${ji})">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <h3>🏢 ${jedinica.ime}</h3>
+                    <div>
+                        <span style="font-size:12px;color:#666;">${jedinica.sobe ? jedinica.sobe.length : 0} soba</span>
+                    </div>
+                </div>
+            </div>
+        `).join('')}
+        <button class="btn btn-success" onclick="showAddModal('jedinica')" style="width:100%;margin-top:15px;">+ Dodaj jedinicu</button>
+    `;
+    
+    // Dug pritisak za preimenovanje
+    c.querySelectorAll('.card').forEach((card, index) => {
+        let longPressTimer;
+        card.ontouchstart = (e) => {
+            longPressTimer = setTimeout(() => {
+                e.preventDefault();
+                showRenameModal('jedinica', index);
+            }, 500);
+        };
+        card.ontouchend = () => { if (longPressTimer) clearTimeout(longPressTimer); };
+        card.oncontextmenu = (e) => { e.preventDefault(); showRenameModal('jedinica', index); };
+    });
+}
+
+function openSobe(jedinicaIndex) {
+    currentJedinica = jedinicaIndex;
+    const jedinica = data.jedinice[jedinicaIndex];
+    const c = document.getElementById('mainContent');
+    c.innerHTML = `
+        <button class="btn btn-info btn-sm" onclick="renderJedinice()" style="margin-bottom:15px;">↩ Nazad</button>
+        <h2 style="margin-bottom:15px;">🏢 ${jedinica.ime}</h2>
+        ${jedinica.sobe.length === 0 ? '<p style="color:#999;">Nema soba. Kliknite "+ Dodaj sobu".</p>' : ''}
+        ${jedinica.sobe.map((soba, si) => {
+            const isPlaceno = soba.placenoMesec === new Date().getMonth()+1 && soba.placenoGodina === new Date().getFullYear();
+            const klasa = isPlaceno ? 'soba-zelena' : 'soba-crvena';
+            return `
+                <div class="card ${klasa}">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+                        <h3>🚪 Soba ${soba.ime}</h3>
+                        <span class="badge ${isPlaceno ? 'badge-placeno' : 'badge-nije'}">
+                            ${isPlaceno ? '✅ Plaćeno' : '❌ Nije plaćeno'}
+                        </span>
+                    </div>
+                    <button class="btn btn-success btn-sm" onclick="event.stopPropagation(); openPayModal(${si});" style="margin-top:10px;">💰 Plati</button>
+                </div>
+            `;
+        }).join('')}
+        <button class="btn btn-success" onclick="showAddModal('soba')" style="width:100%;margin-top:15px;">+ Dodaj sobu</button>
+    `;
+    
+    c.querySelectorAll('.card').forEach((card, index) => {
+        let longPressTimer;
+        card.ontouchstart = (e) => {
+            longPressTimer = setTimeout(() => {
+                e.preventDefault();
+                showRenameModal('soba', index);
+            }, 500);
+        };
+        card.ontouchend = () => { if (longPressTimer) clearTimeout(longPressTimer); };
+        card.oncontextmenu = (e) => { e.preventDefault(); showRenameModal('soba', index); };
+    });
+}
+
+// ==================== MODALI ====================
+function showAddModal(type) {
+    document.getElementById('addModalTitle').textContent = type === 'jedinica' ? 'Dodaj jedinicu' : 'Dodaj sobu';
+    document.getElementById('addInput').value = '';
+    window.addType = type;
+    showModal('addModal');
+}
+
+function saveNew() {
+    const name = document.getElementById('addInput').value.trim();
+    if (!name) return;
+    
+    if (window.addType === 'jedinica') {
+        data.jedinice.push({ ime: name, sobe: [] });
+    } else if (window.addType === 'soba' && currentJedinica !== null) {
+        data.jedinice[currentJedinica].sobe.push({ ime: name, placenoMesec: null, placenoGodina: null, placenoDatum: null });
+    }
+    
+    saveToCloud();
+    closeModal('addModal');
+    if (currentJedinica !== null && window.addType === 'soba') {
+        openSobe(currentJedinica);
+    } else {
+        renderJedinice();
+    }
+}
+
+function showRenameModal(type, index) {
+    renamingType = type;
+    if (type === 'jedinica') {
+        renamingJedinica = index;
+        document.getElementById('renameInput').value = data.jedinice[index].ime;
+    } else if (type === 'soba') {
+        renamingSoba = index;
+        document.getElementById('renameInput').value = data.jedinice[currentJedinica].sobe[index].ime;
+    }
+    showModal('renameModal');
+}
+
+function saveRename() {
+    const name = document.getElementById('renameInput').value.trim();
+    if (!name) return;
+    
+    if (renamingType === 'jedinica') {
+        data.jedinice[renamingJedinica].ime = name;
+    } else if (renamingType === 'soba') {
+        data.jedinice[currentJedinica].sobe[renamingSoba].ime = name;
+    }
+    
+    saveToCloud();
+    closeModal('renameModal');
+    if (currentJedinica !== null && renamingType === 'soba') {
+        openSobe(currentJedinica);
+    } else {
+        renderJedinice();
+    }
+}
+
+function openPayModal(sobaIndex) {
+    payingSoba = sobaIndex;
+    const soba = data.jedinice[currentJedinica].sobe[sobaIndex];
+    document.getElementById('paySobaInfo').textContent = `Soba ${soba.ime} - ${data.jedinice[currentJedinica].ime}`;
+    
+    const now = new Date();
+    document.getElementById('payMesec').value = now.getMonth()+1;
+    document.getElementById('payGodina').value = now.getFullYear();
+    
+    showModal('payModal');
+}
+
+function confirmPay() {
+    if (payingSoba === null) return;
+    
+    const mesec = parseInt(document.getElementById('payMesec').value);
+    const godina = parseInt(document.getElementById('payGodina').value);
+    
+    data.jedinice[currentJedinica].sobe[payingSoba].placenoMesec = mesec;
+    data.jedinice[currentJedinica].sobe[payingSoba].placenoGodina = godina;
+    data.jedinice[currentJedinica].sobe[payingSoba].placenoDatum = new Date().toLocaleString('hr');
+    
+    saveToCloud();
+    closeModal('payModal');
+    openSobe(currentJedinica);
+}
+
+// ==================== MENADŽER ====================
+function showManager() {
+    const now = new Date();
+    document.getElementById('reportMesec').value = now.getMonth()+1;
+    document.getElementById('reportGodina').value = now.getFullYear();
+    renderReport();
+    showModal('managerModal');
+}
+
+function renderReport() {
+    const mesec = parseInt(document.getElementById('reportMesec').value);
+    const godina = parseInt(document.getElementById('reportGodina').value);
+    const c = document.getElementById('reportContent');
+    
+    let html = `<h4 style="margin-bottom:15px;">📊 Izveštaj - ${getMesecIme(mesec)} ${godina}</h4>`;
+    
+    data.jedinice.forEach(jedinica => {
+        html += `<div style="background:#f8f9fa;padding:10px;border-radius:5px;margin-bottom:10px;">
+            <strong>🏢 ${jedinica.ime}</strong><br>`;
+        
+        jedinica.sobe.forEach(soba => {
+            const placeno = soba.placenoMesec === mesec && soba.placenoGodina === godina;
+            html += `<div style="margin-left:15px;margin-top:5px;">
+                🚪 Soba ${soba.ime}: <span class="badge ${placeno ? 'badge-placeno' : 'badge-nije'}">${placeno ? '✅ Plaćeno' : '❌ Nije plaćeno'}</span>
+                ${placeno && soba.placenoDatum ? `<span style="font-size:12px;color:#666;"> (${soba.placenoDatum})</span>` : ''}
+            </div>`;
+        });
+        
+        html += '</div>';
+    });
+    
+    c.innerHTML = html;
+}
+
+function getMesecIme(mesec) {
+    const meseci = ['Januar','Februar','Mart','April','Maj','Jun','Jul','Avgust','Septembar','Oktobar','Novembar','Decembar'];
+    return meseci[mesec-1];
+}
+
+function printReport() {
+    const mesec = parseInt(document.getElementById('reportMesec').value);
+    const godina = parseInt(document.getElementById('reportGodina').value);
+    
+    let printContent = `<h2 style="text-align:center;">SMJEŠTAJ - Izveštaj</h2>
+        <p style="text-align:center;">${getMesecIme(mesec)} ${godina}</p>`;
+    
+    data.jedinice.forEach(jedinica => {
+        printContent += `<div style="margin-bottom:15px;border-bottom:1px solid #ddd;padding-bottom:10px;">
+            <strong>🏢 ${jedinica.ime}</strong><br>`;
+        
+        jedinica.sobe.forEach(soba => {
+            const placeno = soba.placenoMesec === mesec && soba.placenoGodina === godina;
+            printContent += `<div style="margin-left:15px;margin-top:5px;">
+                🚪 Soba ${soba.ime}: <strong>${placeno ? '✅ PLAĆENO' : '❌ NIJE PLAĆENO'}</strong>
+            </div>`;
+        });
+        
+        printContent += '</div>';
+    });
+    
+    const win = window.open('', '_blank');
+    win.document.write(`<html><head><title>Smještaj - Izveštaj</title>
+        <style>body{font-family:Arial,sans-serif;padding:20px;font-size:12px;}</style></head>
+        <body>${printContent}</body></html>`);
+    win.document.close();
+    win.print();
+}
+
+// ==================== HELPERS ====================
+function showModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+function exportData() {
+    const exportObj = JSON.stringify(data, null, 2);
+    const blob = new Blob([exportObj], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `smjestaj_backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+async function resetAll() {
+    const sifra = prompt('🔒 Unesite šifru za reset:');
+    if (sifra === '1978') {
+        if (confirm('⚠️ Resetovati SVE podatke?')) {
+            localStorage.removeItem('smjestaj_data');
+            data = { jedinice: [] };
+            await saveToCloud();
+            renderJedinice();
+            alert('✅ Resetovano!');
+        }
+    } else if (sifra !== null) {
+        alert('❌ Pogrešna šifra!');
+    }
+}
+
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.classList.remove('active');
+    }
+};
+</script>
+</body>
+</html>
