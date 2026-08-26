@@ -172,8 +172,9 @@
         <div class="modal-header"><h3>📤 Izvoz podataka</h3><button onclick="closeModal('exportModal')" style="font-size:24px;background:none;border:none;">&times;</button></div>
         <p style="margin-bottom:15px;">Izaberite kako želite da sačuvate ili pošaljete backup:</p>
         <button onclick="downloadBackup()" class="btn btn-info" style="width:100%;margin-bottom:10px;">💾 Preuzmi fajl</button>
-        <button onclick="shareBackup()" class="btn btn-success" style="width:100%;margin-bottom:10px;">📤 Podijeli (Gmail, Drive, itd.)</button>
-        <button onclick="closeModal('exportModal')" class="btn btn-danger" style="width:100%;">Zatvori</button>
+        <button onclick="shareToGmail()" class="btn btn-danger" style="width:100%;margin-bottom:10px;">📧 Gmail</button>
+        <button onclick="shareToDrive()" class="btn btn-success" style="width:100%;margin-bottom:10px;">📗 Google Drive</button>
+        <button onclick="closeModal('exportModal')" class="btn btn-warning" style="width:100%;">Zatvori</button>
     </div>
 </div>
 
@@ -482,45 +483,30 @@ function downloadBackup() {
     document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
-async function shareBackup() {
+function shareToGmail() {
     const jsonStr = JSON.stringify(data, null, 2);
-    
-    try {
-        // Pokušaj sa File objektom (Android Chrome)
-        if (navigator.canShare) {
-            const file = new File([jsonStr], `smjestaj_backup_${new Date().toISOString().slice(0,10)}.json`, { type: 'application/json' });
-            if (navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    files: [file],
-                    title: 'Smještaj Backup',
-                    text: 'Backup fajl sa podacima o smještaju'
-                });
-                return;
-            }
-        }
-    } catch(e) {
-        console.log('File share error:', e);
-    }
-    
-    try {
-        // Pokušaj sa data URL (iOS Safari)
-        if (navigator.share) {
-            const dataUrl = 'data:application/json;base64,' + btoa(unescape(encodeURIComponent(jsonStr)));
-            await navigator.share({
-                title: 'Smještaj Backup',
-                text: 'Podaci o smještaju',
-                url: dataUrl
-            });
-            return;
-        }
-    } catch(e) {
-        if (e.name === 'AbortError') return;
-        console.log('URL share error:', e);
-    }
-    
-    // Fallback: preuzmi fajl
-    downloadBackup();
-    alert('Dijeljenje nije podržano. Fajl je preuzet lokalno.');
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=Smještaj Backup&body=Backup fajl u prilogu';
+    window.open(gmailUrl, '_blank');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `smjestaj_backup_${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    alert('✅ Fajl je preuzet. Prikačite ga u Gmail prozoru.');
+}
+
+function shareToDrive() {
+    const jsonStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const driveUrl = 'https://drive.google.com/drive/u/0/upload';
+    window.open(driveUrl, '_blank');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `smjestaj_backup_${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    alert('✅ Fajl je preuzet. Prebacite ga u Drive prozor.');
 }
 
 function importData() {
