@@ -483,17 +483,44 @@ function downloadBackup() {
 }
 
 async function shareBackup() {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const file = new File([blob], `smjestaj_backup_${new Date().toISOString().slice(0,10)}.json`, { type: 'application/json' });
-    if (navigator.share) {
-        try {
-            await navigator.share({ files: [file], title: 'Smještaj Backup', text: 'Backup fajl sa podacima o smještaju' });
-        } catch (err) {
-            if (err.name !== 'AbortError') alert('Dijeljenje nije uspjelo. Pokušajte preuzeti fajl.');
+    const jsonStr = JSON.stringify(data, null, 2);
+    
+    try {
+        // Pokušaj sa File objektom (Android Chrome)
+        if (navigator.canShare) {
+            const file = new File([jsonStr], `smjestaj_backup_${new Date().toISOString().slice(0,10)}.json`, { type: 'application/json' });
+            if (navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: 'Smještaj Backup',
+                    text: 'Backup fajl sa podacima o smještaju'
+                });
+                return;
+            }
         }
-    } else {
-        alert('Web Share API nije podržan na ovom uređaju. Koristite Preuzmi fajl.');
+    } catch(e) {
+        console.log('File share error:', e);
     }
+    
+    try {
+        // Pokušaj sa data URL (iOS Safari)
+        if (navigator.share) {
+            const dataUrl = 'data:application/json;base64,' + btoa(unescape(encodeURIComponent(jsonStr)));
+            await navigator.share({
+                title: 'Smještaj Backup',
+                text: 'Podaci o smještaju',
+                url: dataUrl
+            });
+            return;
+        }
+    } catch(e) {
+        if (e.name === 'AbortError') return;
+        console.log('URL share error:', e);
+    }
+    
+    // Fallback: preuzmi fajl
+    downloadBackup();
+    alert('Dijeljenje nije podržano. Fajl je preuzet lokalno.');
 }
 
 function importData() {
