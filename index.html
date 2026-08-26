@@ -124,7 +124,7 @@
     </div>
 </div>
 
-<!-- MODAL ZA SOBU (radnici + plaćanje) -->
+<!-- MODAL ZA SOBU -->
 <div id="sobaModal" class="modal">
     <div class="modal-content">
         <div class="modal-header"><h3 id="sobaModalTitle"></h3><button onclick="closeModal('sobaModal')" style="font-size:24px;background:none;border:none;">&times;</button></div>
@@ -484,29 +484,19 @@ function downloadBackup() {
 }
 
 function shareToGmail() {
-    const jsonStr = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=Smještaj Backup&body=Backup fajl u prilogu';
-    window.open(gmailUrl, '_blank');
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `smjestaj_backup_${new Date().toISOString().slice(0,10)}.json`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-    alert('✅ Fajl je preuzet. Prikačite ga u Gmail prozoru.');
+    downloadBackup();
+    setTimeout(() => {
+        window.location.href = 'https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=Smještaj Backup';
+    }, 1000);
+    alert('📧 Gmail:\n\n1. Sačekajte da se otvori Gmail\n2. Prikačite preuzeti fajl (smjestaj_backup.json)\n3. Pošaljite poruku');
 }
 
 function shareToDrive() {
-    const jsonStr = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonStr], { type: 'application/json' });
-    const driveUrl = 'https://drive.google.com/drive/u/0/upload';
-    window.open(driveUrl, '_blank');
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `smjestaj_backup_${new Date().toISOString().slice(0,10)}.json`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-    alert('✅ Fajl je preuzet. Prebacite ga u Drive prozor.');
+    downloadBackup();
+    setTimeout(() => {
+        window.location.href = 'https://drive.google.com/drive/my-drive';
+    }, 1000);
+    alert('📗 Google Drive:\n\n1. Sačekajte da se otvori Drive\n2. Kliknite "+ Novo" (New)\n3. Izaberite "File upload" (Otpremi datoteku)\n4. Odaberite preuzeti fajl (smjestaj_backup.json)');
 }
 
 function importData() {
