@@ -59,6 +59,10 @@
         .radnik-row { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; }
         .radnik-row span { font-size: 16px; cursor: pointer; flex: 1; }
 
+        .troskovi-group { margin-bottom: 10px; }
+        .troskovi-group label { display: block; font-weight: bold; margin-bottom: 3px; font-size: 14px; }
+        .troskovi-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 15px; }
+
         @media print {
             @page { size: A4 landscape; margin: 6mm; }
             body { background: white !important; }
@@ -124,7 +128,7 @@
     </div>
 </div>
 
-<!-- MODAL ZA SOBU -->
+<!-- MODAL ZA SOBU (radnici + troškovi) -->
 <div id="sobaModal" class="modal">
     <div class="modal-content">
         <div class="modal-header"><h3 id="sobaModalTitle"></h3><button onclick="closeModal('sobaModal')" style="font-size:24px;background:none;border:none;">&times;</button></div>
@@ -135,11 +139,26 @@
         </div>
         <hr style="margin:15px 0;">
         <div>
-            <label style="font-weight:bold;font-size:15px;">💰 Plaćanje za: <span id="payMonthLabel"></span></label>
-            <div style="margin-top:10px;"><label>Iznos uplate (€):</label><input type="number" id="payIznos" class="search-input" placeholder="npr. 150" min="0" step="any"></div>
-            <div style="display:flex;gap:5px;margin-top:10px;">
-                <button onclick="confirmPay()" class="btn btn-success" style="flex:1;">✅ Označi plaćeno</button>
-                <button onclick="obrisiPlacanje()" class="btn btn-danger" style="flex:1;">❌ Obriši plaćanje</button>
+            <label style="font-weight:bold;font-size:15px;">💰 Troškovi za: <span id="payMonthLabel"></span></label>
+            <div class="troskovi-group">
+                <label>🏠 Renta (€):</label>
+                <input type="number" id="payRenta" placeholder="0" min="0" step="any">
+            </div>
+            <div class="troskovi-group">
+                <label>💡 Struja (€):</label>
+                <input type="number" id="payStruja" placeholder="0" min="0" step="any">
+            </div>
+            <div class="troskovi-group">
+                <label>💧 Voda (€):</label>
+                <input type="number" id="payVoda" placeholder="0" min="0" step="any">
+            </div>
+            <div class="troskovi-group">
+                <label>📦 Ostalo (€):</label>
+                <input type="number" id="payOstalo" placeholder="0" min="0" step="any">
+            </div>
+            <div style="display:flex;gap:5px;margin-top:15px;">
+                <button onclick="confirmPay()" class="btn btn-success" style="flex:1;">✅ Sačuvaj</button>
+                <button onclick="obrisiPlacanje()" class="btn btn-danger" style="flex:1;">❌ Obriši</button>
             </div>
         </div>
     </div>
@@ -254,10 +273,11 @@ function renderMatrix() {
                 </span>
             </td>`;
             for (let m = 1; m <= 12; m++) {
-                const placeno = soba.placeniMjeseci && soba.placeniMjeseci[m];
-                const klasa = placeno ? 'zelena' : 'crvena';
-                const iznos = placeno ? `<br><small>${placeno.iznos}€</small>` : '';
-                html += `<td class="celija ${klasa}" onclick="openSobaModal(${ji},${si},${m})">${placeno ? '✅' + iznos : ''}</td>`;
+                const trosak = soba.troskovi && soba.troskovi[m];
+                const ukupnoTrosak = trosak ? (trosak.renta||0) + (trosak.struja||0) + (trosak.voda||0) + (trosak.ostalo||0) : 0;
+                const klasa = ukupnoTrosak > 0 ? 'zelena' : 'crvena';
+                const prikaz = ukupnoTrosak > 0 ? `✅<br><small>${ukupnoTrosak.toFixed(0)}€</small>` : '';
+                html += `<td class="celija ${klasa}" onclick="openSobaModal(${ji},${si},${m})">${prikaz}</td>`;
             }
             html += '</tr>';
         });
@@ -293,8 +313,13 @@ function openSobaModal(ji, si, mesec) {
     const soba = jedinica.sobe[si];
     document.getElementById('sobaModalTitle').textContent = `🚪 ${jedinica.ime} - Soba ${soba.ime}`;
     document.getElementById('payMonthLabel').textContent = `${getMesecIme(mesec)} ${new Date().getFullYear()}`;
-    const placeno = soba.placeniMjeseci && soba.placeniMjeseci[mesec];
-    document.getElementById('payIznos').value = placeno ? placeno.iznos : '';
+
+    const trosak = soba.troskovi && soba.troskovi[mesec];
+    document.getElementById('payRenta').value = trosak ? (trosak.renta || '') : '';
+    document.getElementById('payStruja').value = trosak ? (trosak.struja || '') : '';
+    document.getElementById('payVoda').value = trosak ? (trosak.voda || '') : '';
+    document.getElementById('payOstalo').value = trosak ? (trosak.ostalo || '') : '';
+
     renderRadnici();
     showModal('sobaModal');
 }
@@ -341,14 +366,26 @@ function obrisiRadnika(ri) {
     }
 }
 
-// ==================== PLAĆANJE ====================
+// ==================== TROŠKOVI ====================
 function confirmPay() {
     if (!selectedCell) return;
     const { ji, si, mesec } = selectedCell;
-    const iznos = parseFloat(document.getElementById('payIznos').value) || 0;
+    const renta = parseFloat(document.getElementById('payRenta').value) || 0;
+    const struja = parseFloat(document.getElementById('payStruja').value) || 0;
+    const voda = parseFloat(document.getElementById('payVoda').value) || 0;
+    const ostalo = parseFloat(document.getElementById('payOstalo').value) || 0;
+
     const soba = data.jedinice[ji].sobe[si];
-    if (!soba.placeniMjeseci) soba.placeniMjeseci = {};
-    soba.placeniMjeseci[mesec] = { iznos: iznos, datum: new Date().toLocaleString('hr'), godina: new Date().getFullYear() };
+    if (!soba.troskovi) soba.troskovi = {};
+    soba.troskovi[mesec] = {
+        renta: renta,
+        struja: struja,
+        voda: voda,
+        ostalo: ostalo,
+        datum: new Date().toLocaleString('hr'),
+        godina: new Date().getFullYear()
+    };
+
     saveToCloud();
     closeModal('sobaModal');
     renderMatrix();
@@ -358,7 +395,7 @@ function obrisiPlacanje() {
     if (!selectedCell) return;
     const { ji, si, mesec } = selectedCell;
     const soba = data.jedinice[ji].sobe[si];
-    if (soba.placeniMjeseci && soba.placeniMjeseci[mesec]) delete soba.placeniMjeseci[mesec];
+    if (soba.troskovi && soba.troskovi[mesec]) delete soba.troskovi[mesec];
     saveToCloud();
     closeModal('sobaModal');
     renderMatrix();
@@ -384,7 +421,7 @@ function addSoba() {
     const ji = parseInt(document.getElementById('selectJedinica').value);
     const name = document.getElementById('newSobaName').value.trim();
     if (!name) return;
-    data.jedinice[ji].sobe.push({ ime: name, radnici: [], placeniMjeseci: {} });
+    data.jedinice[ji].sobe.push({ ime: name, radnici: [], troskovi: {} });
     saveToCloud(); closeModal('addSobaModal'); renderMatrix();
 }
 
@@ -398,16 +435,45 @@ function renderManager() {
     let ukupno = 0;
 
     data.jedinice.forEach(jedinica => {
-        let jedinicaUkupno = 0;
+        let jedinicaRenta = 0, jedinicaStruja = 0, jedinicaVoda = 0, jedinicaOstalo = 0;
+
         html += `<div style="background:#f8f9fa;border:1px solid #ddd;border-radius:5px;padding:10px;margin-bottom:10px;"><strong>🏢 ${jedinica.ime}</strong><br>`;
+
         jedinica.sobe.forEach(soba => {
-            let sobaUkupno = 0;
-            for (let m = 1; m <= 12; m++) { const placeno = soba.placeniMjeseci && soba.placeniMjeseci[m]; sobaUkupno += placeno ? placeno.iznos : 0; }
-            jedinicaUkupno += sobaUkupno; ukupno += sobaUkupno;
-            html += `<div style="margin-left:20px;margin-top:5px;display:flex;justify-content:space-between;"><span>🚪 Soba ${soba.ime} (${soba.radnici ? soba.radnici.length : 0}👤)</span><span><strong>${sobaUkupno.toFixed(2)} €</strong></span></div>`;
-            for (let m = 1; m <= 12; m++) { const placeno = soba.placeniMjeseci && soba.placeniMjeseci[m]; if (placeno) html += `<div style="margin-left:40px;font-size:12px;color:#666;">${getMesecIme(m).substring(0,3)}: ${placeno.iznos.toFixed(2)} €</div>`; }
+            let sobaRenta = 0, sobaStruja = 0, sobaVoda = 0, sobaOstalo = 0;
+
+            for (let m = 1; m <= 12; m++) {
+                const trosak = soba.troskovi && soba.troskovi[m];
+                if (trosak && trosak.godina === godina) {
+                    sobaRenta += trosak.renta || 0;
+                    sobaStruja += trosak.struja || 0;
+                    sobaVoda += trosak.voda || 0;
+                    sobaOstalo += trosak.ostalo || 0;
+                }
+            }
+
+            const sobaUkupno = sobaRenta + sobaStruja + sobaVoda + sobaOstalo;
+            jedinicaRenta += sobaRenta;
+            jedinicaStruja += sobaStruja;
+            jedinicaVoda += sobaVoda;
+            jedinicaOstalo += sobaOstalo;
+            ukupno += sobaUkupno;
+
+            if (sobaUkupno > 0) {
+                html += `<div style="margin-left:20px;margin-top:5px;">
+                    <strong>🚪 Soba ${soba.ime}</strong> (${soba.radnici ? soba.radnici.length : 0}👤)<br>
+                    <span style="font-size:13px;color:#333;">
+                        Renta: ${sobaRenta.toFixed(2)}€ | Struja: ${sobaStruja.toFixed(2)}€ | Voda: ${sobaVoda.toFixed(2)}€ | Ostalo: ${sobaOstalo.toFixed(2)}€
+                    </span><br>
+                    <strong>Ukupno soba: ${sobaUkupno.toFixed(2)}€</strong>
+                </div>`;
+            }
         });
-        html += `<div style="margin-top:5px;border-top:1px solid #ddd;padding-top:5px;text-align:right;"><strong>Jedinica: ${jedinicaUkupno.toFixed(2)} €</strong></div></div>`;
+
+        const jedinicaUkupno = jedinicaRenta + jedinicaStruja + jedinicaVoda + jedinicaOstalo;
+        html += `<div style="margin-top:8px;border-top:1px solid #ddd;padding-top:8px;text-align:right;">
+            <strong>Jedinica ukupno: ${jedinicaUkupno.toFixed(2)} €</strong>
+        </div></div>`;
     });
 
     html += `<div style="background:#667eea;color:white;padding:15px;border-radius:5px;text-align:center;font-size:18px;"><strong>UKUPNO: ${ukupno.toFixed(2)} €</strong></div>`;
@@ -439,13 +505,24 @@ function printManager() {
         let jedinicaUkupno = 0;
         printContent += `<div style="margin-bottom:15px;border:1px solid #ddd;padding:10px;"><strong>🏢 ${jedinica.ime}</strong><br>`;
         jedinica.sobe.forEach(soba => {
-            let sobaUkupno = 0;
-            for (let m = 1; m <= 12; m++) { const placeno = soba.placeniMjeseci && soba.placeniMjeseci[m]; sobaUkupno += placeno ? placeno.iznos : 0; }
+            let sobaRenta=0, sobaStruja=0, sobaVoda=0, sobaOstalo=0;
+            for (let m = 1; m <= 12; m++) {
+                const trosak = soba.troskovi && soba.troskovi[m];
+                if (trosak && trosak.godina === godina) {
+                    sobaRenta += trosak.renta || 0;
+                    sobaStruja += trosak.struja || 0;
+                    sobaVoda += trosak.voda || 0;
+                    sobaOstalo += trosak.ostalo || 0;
+                }
+            }
+            const sobaUkupno = sobaRenta + sobaStruja + sobaVoda + sobaOstalo;
             jedinicaUkupno += sobaUkupno;
-            printContent += `<div style="margin-left:20px;display:flex;justify-content:space-between;"><span>🚪 Soba ${soba.ime} (${soba.radnici ? soba.radnici.length : 0}👤)</span><span><strong>${sobaUkupno.toFixed(2)} €</strong></span></div>`;
+            printContent += `<div style="margin-left:20px;margin-top:5px;"><strong>🚪 Soba ${soba.ime}</strong> (${soba.radnici ? soba.radnici.length : 0}👤)<br>
+                Renta: ${sobaRenta.toFixed(2)}€ | Struja: ${sobaStruja.toFixed(2)}€ | Voda: ${sobaVoda.toFixed(2)}€ | Ostalo: ${sobaOstalo.toFixed(2)}€<br>
+                <strong>Ukupno: ${sobaUkupno.toFixed(2)}€</strong></div>`;
         });
         ukupno += jedinicaUkupno;
-        printContent += `<div style="text-align:right;"><strong>Jedinica: ${jedinicaUkupno.toFixed(2)} €</strong></div></div>`;
+        printContent += `<div style="text-align:right;margin-top:5px;"><strong>Jedinica: ${jedinicaUkupno.toFixed(2)} €</strong></div></div>`;
     });
     printContent += `<div style="text-align:center;font-size:16px;"><strong>UKUPNO: ${ukupno.toFixed(2)} €</strong></div>`;
     const win = window.open('', '_blank');
@@ -470,9 +547,7 @@ function printRadnici() {
 }
 
 // ==================== EXPORT / IMPORT ====================
-function exportData() {
-    showModal('exportModal');
-}
+function exportData() { showModal('exportModal'); }
 
 function downloadBackup() {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -485,17 +560,13 @@ function downloadBackup() {
 
 function shareToGmail() {
     downloadBackup();
-    setTimeout(() => {
-        window.location.href = 'https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=Smještaj Backup';
-    }, 1000);
+    setTimeout(() => { window.location.href = 'https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=Smještaj Backup'; }, 1000);
     alert('📧 Gmail:\n\n1. Sačekajte da se otvori Gmail\n2. Prikačite preuzeti fajl (smjestaj_backup.json)\n3. Pošaljite poruku');
 }
 
 function shareToDrive() {
     downloadBackup();
-    setTimeout(() => {
-        window.location.href = 'https://drive.google.com/drive/my-drive';
-    }, 1000);
+    setTimeout(() => { window.location.href = 'https://drive.google.com/drive/my-drive'; }, 1000);
     alert('📗 Google Drive:\n\n1. Sačekajte da se otvori Drive\n2. Kliknite "+ Novo" (New)\n3. Izaberite "File upload" (Otpremi datoteku)\n4. Odaberite preuzeti fajl (smjestaj_backup.json)');
 }
 
